@@ -104,7 +104,111 @@
    - PAINTINGS array near the bottom = edit this to swap in your own art.
    - Each room is built by createRoom() using a small config object.
    - Movement: WASD + mouse look (pointer lock). Click a painting to open its note.
+
+   NOTE ON STRUCTURE: the "Enter Gallery" button is wired up FIRST, on its
+   own, before any 3D code runs. The 3D scene is built inside initGallery()
+   wrapped in a try/catch. This means: even if the 3D engine has a problem
+   (unsupported browser, blocked script, GPU issue), the button still
+   responds instead of silently doing nothing — and you'll see a clear
+   on-screen error saying what went wrong instead of a dead click.
    ========================================================================= */
+
+const $ = id => document.getElementById(id);
+let gameStarted = false;   // true once the visitor has clicked Enter
+let galleryReady = false;  // true once the 3D scene finished building
+let dom = null;            // the canvas element, set once the scene exists
+
+function showFatalError(msg){
+  const lbl = $('roomLabel');
+  lbl.style.opacity = 1;
+  lbl.style.color = '#ff6b6b';
+  lbl.textContent = '⚠ ' + msg;
+  console.error(msg);
+}
+
+// ---------- ENTER GALLERY button (independent of the 3D engine) ----------
+$('enterBtn').onclick = () => {
+  const name = $('nameInput').value.trim() || 'friend';
+  $('stepEnterName').style.display = 'none';
+  const wm = $('welcomeMsg');
+  wm.style.display = 'block';
+  wm.textContent = `Welcome, ${name}. Your artwork is waiting for you in Lobby 1.`;
+  try { startAudio(); } catch(e){ console.warn('Audio failed to start:', e); }
+  setTimeout(() => {
+    $('welcome').style.display = 'none';
+    $('crosshair').style.display = 'block';
+    $('hint').style.display = 'block';
+    $('muteBtn').style.display = 'block';
+    gameStarted = true;
+    if(!galleryReady) showFatalError('3D engine did not start — open the browser console (F12) for details.');
+    else if(dom) dom.requestPointerLock();
+  }, 2200);
+};
+$('muteBtn').onclick = () => {
+  muted = !muted;
+  if(master) master.gain.value = muted ? 0 : 0.25;
+  $('muteBtn').textContent = muted ? '🔇 Sound' : '🔊 Sound';
+};
+$('noteClose').onclick = () => { $('noteOverlay').style.display = 'none'; };
+function openNote(d){
+  if(dom) document.exitPointerLock();
+  const box = $('noteBox');
+  box.classList.toggle('win', !!d.winner);
+  $('noteTitle').textContent = d.winner ? '🎉 You found a free print!' : d.label;
+  $('noteBody').textContent = d.story;
+  $('noteOverlay').style.display = 'flex';
+}
+
+// ---------- lightweight procedural ambience (Web Audio, no external files) ----------
+// Independent of Three.js — works even if the 3D scene fails to load.
+let audioCtx, master, noiseSrc, droneOsc, muted = false;
+function footstepTick(dt){ /* placeholder hook if you add real footstep samples later */ }
+function startAudio(){
+  if(audioCtx) return; // already started
+  audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  master = audioCtx.createGain(); master.gain.value=0.25; master.connect(audioCtx.destination);
+
+  droneOsc = audioCtx.createOscillator(); droneOsc.type='sine'; droneOsc.frequency.value=55;
+  const droneGain = audioCtx.createGain(); droneGain.gain.value=0.15;
+  droneOsc.connect(droneGain).connect(master); droneOsc.start();
+
+  const bufSize = 2*audioCtx.sampleRate;
+  const buf = audioCtx.createBuffer(1,bufSize,audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for(let i=0;i<bufSize;i++) data[i]=Math.random()*2-1;
+  noiseSrc = audioCtx.createBufferSource(); noiseSrc.buffer=buf; noiseSrc.loop=true;
+  const filter = audioCtx.createBiquadFilter(); filter.type='lowpass'; filter.frequency.value=500;
+  const noiseGain = audioCtx.createGain(); noiseGain.gain.value=0.06;
+  noiseSrc.connect(filter).connect(noiseGain).connect(master); noiseSrc.start();
+
+  // occasional random "event" blip so rooms feel alive (esp. Lobby 5)
+  setInterval(()=>{
+    if(muted || !gameStarted || !galleryReady) return;
+    const near = currentRoom();
+    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+    o.type = near && near.tag==='LOBBY 5' ? 'sawtooth' : 'sine';
+    o.frequency.value = (near && near.tag==='LOBBY 5') ? 120+Math.random()*200 : 300+Math.random()*200;
+    g.gain.value=0; o.connect(g).connect(master);
+    o.start(); g.gain.linearRampToValueAtTime((near && near.tag==='LOBBY 5')?0.08:0.03, audioCtx.currentTime+0.3);
+    g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+1.4);
+    o.stop(audioCtx.currentTime+1.5);
+  }, 5000);
+}
+function currentRoom(){
+  if(!window._rooms || !window._camera) return null;
+  return window._rooms.reduce((a,r)=> Math.abs(r.z-window._camera.position.z) < Math.abs(a.z-window._camera.position.z) ? r : a, window._rooms[0]);
+}
+
+// ---------- everything below needs Three.js — wrapped so a failure here
+//            can never break the button above ----------
+try {
+initGallery();
+galleryReady = true;
+} catch(err){
+  showFatalError('Gallery failed to load: ' + err.message);
+}
+
+function initGallery(){
 
 // ---------- basic setup ----------
 const scene = new THREE.Scene();
@@ -310,13 +414,16 @@ const rooms = [
 ];
 rooms.forEach(createRoom);
 
+window._rooms = rooms;
+window._camera = camera;
+
 // ---------- movement (WASD + pointer-lock mouse look) ----------
 let yaw=0, pitch=0;
 const keys={};
 document.addEventListener('keydown', e=>keys[e.code]=true);
 document.addEventListener('keyup', e=>keys[e.code]=false);
 
-const dom = renderer.domElement;
+dom = renderer.domElement; // assigns the OUTER `dom` variable (declared near the top)
 dom.addEventListener('click', ()=>{ if(gameStarted && document.pointerLockElement!==dom) dom.requestPointerLock(); });
 document.addEventListener('mousemove', e=>{
   if(document.pointerLockElement!==dom) return;
@@ -385,77 +492,8 @@ dom.addEventListener('mousedown', e=>{
   const hit = ray.intersectObjects(clickable)[0];
   if(hit) openNote(hit.object.userData);
 });
-function openNote(d){
-  document.exitPointerLock();
-  const overlay=document.getElementById('noteOverlay');
-  const box=document.getElementById('noteBox');
-  box.classList.toggle('win', !!d.winner);
-  document.getElementById('noteTitle').textContent = d.winner ? '🎉 You found a free print!' : d.label;
-  document.getElementById('noteBody').textContent = d.story;
-  overlay.style.display='flex';
-}
-document.getElementById('noteClose').onclick = ()=>{
-  document.getElementById('noteOverlay').style.display='none';
-};
 
-// ---------- lightweight procedural ambience (Web Audio, no external files) ----------
-let audioCtx, master, noiseSrc, droneOsc, muted=false;
-function footstepTick(dt){ /* placeholder hook if you add real footstep samples later */ }
-function startAudio(){
-  audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-  master = audioCtx.createGain(); master.gain.value=0.25; master.connect(audioCtx.destination);
-
-  droneOsc = audioCtx.createOscillator(); droneOsc.type='sine'; droneOsc.frequency.value=55;
-  const droneGain = audioCtx.createGain(); droneGain.gain.value=0.15;
-  droneOsc.connect(droneGain).connect(master); droneOsc.start();
-
-  const bufSize = 2*audioCtx.sampleRate;
-  const buf = audioCtx.createBuffer(1,bufSize,audioCtx.sampleRate);
-  const data = buf.getChannelData(0);
-  for(let i=0;i<bufSize;i++) data[i]=Math.random()*2-1;
-  noiseSrc = audioCtx.createBufferSource(); noiseSrc.buffer=buf; noiseSrc.loop=true;
-  const filter = audioCtx.createBiquadFilter(); filter.type='lowpass'; filter.frequency.value=500;
-  const noiseGain = audioCtx.createGain(); noiseGain.gain.value=0.06;
-  noiseSrc.connect(filter).connect(noiseGain).connect(master); noiseSrc.start();
-  window._ambFilter = filter;
-
-  // occasional random "event" blip so rooms feel alive (esp. Lobby 5)
-  setInterval(()=>{
-    if(muted || !gameStarted) return;
-    const near = rooms.reduce((a,r)=> Math.abs(r.z-camera.position.z) < Math.abs(a.z-camera.position.z) ? r : a, rooms[0]);
-    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
-    o.type = near.tag==='LOBBY 5' ? 'sawtooth' : 'sine';
-    o.frequency.value = near.tag==='LOBBY 5' ? 120+Math.random()*200 : 300+Math.random()*200;
-    g.gain.value=0; o.connect(g).connect(master);
-    o.start(); g.gain.linearRampToValueAtTime(near.tag==='LOBBY 5'?0.08:0.03, audioCtx.currentTime+0.3);
-    g.gain.linearRampToValueAtTime(0, audioCtx.currentTime+1.4);
-    o.stop(audioCtx.currentTime+1.5);
-  }, 5000); // one soft ambient "event" sound roughly every 5 seconds
-}
-document.getElementById('muteBtn').onclick = ()=>{
-  muted=!muted;
-  if(master) master.gain.value = muted?0:0.25;
-  document.getElementById('muteBtn').textContent = muted?'🔇 Sound':'🔊 Sound';
-};
-
-// ---------- welcome flow ----------
-let gameStarted=false;
-document.getElementById('enterBtn').onclick = ()=>{
-  const name = document.getElementById('nameInput').value.trim() || 'friend';
-  document.getElementById('stepEnterName').style.display='none';
-  const wm = document.getElementById('welcomeMsg');
-  wm.style.display='block';
-  wm.textContent = `Welcome, ${name}. Your artwork is waiting for you in Lobby 1.`;
-  startAudio();
-  setTimeout(()=>{
-    document.getElementById('welcome').style.display='none';
-    document.getElementById('crosshair').style.display='block';
-    document.getElementById('hint').style.display='block';
-    document.getElementById('muteBtn').style.display='block';
-    gameStarted=true;
-    dom.requestPointerLock();
-  }, 2200);
-};
+} // ---------- end of initGallery() ----------
 </script>
 </body>
 </html>
