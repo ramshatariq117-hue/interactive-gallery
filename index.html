@@ -2,14 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Ramsha Art Studio — Interactive Gallery</title>
 
 <style>
 :root{
-  --blue:#5ef2ff;
-  --blue2:#9adfff;
-  --paper:#e8dcc0;
+  --blue:#72d8ff;
+  --blueSoft:#a8e6ff;
+  --cream:#e8dfce;
+  --burgundy:#351c25;
+  --walnut:#21130f;
 }
 
 *{
@@ -22,7 +24,7 @@ html,body{
   width:100%;
   height:100%;
   overflow:hidden;
-  background:#000;
+  background:#020307;
   font-family:Georgia,serif;
 }
 
@@ -36,93 +38,121 @@ canvas{
   display:block;
 }
 
-/* =========================================================
-   WELCOME
-========================================================= */
+#loading{
+  position:absolute;
+  inset:0;
+  z-index:100;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#020611;
+  color:#72d8ff;
+  letter-spacing:3px;
+  font-size:1.05rem;
+}
 
 #welcome{
   position:absolute;
   inset:0;
-  background:
-    radial-gradient(
-      circle at 50% 40%,
-      #0b1528 0%,
-      #050a14 38%,
-      #000 82%
-    );
+  z-index:50;
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  z-index:50;
-  color:#cbd6e6;
+  color:#dbeeff;
+  background:
+    radial-gradient(
+      ellipse at 50% 38%,
+      rgba(24,61,105,.95) 0%,
+      rgba(8,24,48,.96) 28%,
+      rgba(2,8,19,.99) 65%,
+      #010307 100%
+    );
+}
+
+#welcome::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at 50% 45%,rgba(87,177,229,.10),transparent 32%),
+    linear-gradient(90deg,transparent 0%,rgba(78,146,190,.035) 50%,transparent 100%);
+  pointer-events:none;
 }
 
 #welcome h1{
-  font-size:2.2em;
-  letter-spacing:2px;
+  position:relative;
+  font-size:2.25rem;
+  letter-spacing:4px;
   color:var(--blue);
   text-shadow:
-    0 0 12px var(--blue),
-    0 0 30px #174d70;
-  margin-bottom:8px;
+    0 0 12px rgba(114,216,255,.8),
+    0 0 38px rgba(62,153,212,.45);
+  margin-bottom:10px;
 }
 
 #welcome p{
-  opacity:.7;
-  margin-bottom:22px;
+  position:relative;
+  color:#b8cfe0;
+  opacity:.8;
+  letter-spacing:1px;
+  margin-bottom:28px;
 }
 
 #nameInput{
-  padding:12px 16px;
-  font-size:1.1em;
-  border-radius:6px;
-  border:1px solid #345;
-  background:#0e1420;
-  color:#e8f0ff;
-  width:280px;
+  position:relative;
+  width:285px;
+  padding:13px 16px;
+  border-radius:5px;
+  border:1px solid rgba(120,191,226,.42);
+  background:rgba(3,13,28,.75);
+  color:#e7f6ff;
+  outline:none;
   text-align:center;
-  margin-bottom:16px;
+  font-size:1rem;
+  box-shadow:0 8px 30px rgba(0,0,0,.35);
+}
+
+#nameInput:focus{
+  border-color:#72d8ff;
+  box-shadow:0 0 18px rgba(114,216,255,.16);
 }
 
 #enterBtn{
+  position:relative;
+  margin-top:15px;
   padding:12px 28px;
-  font-size:1.05em;
-  letter-spacing:1px;
+  border:1px solid #72d8ff;
+  border-radius:5px;
+  background:rgba(4,17,31,.55);
+  color:#8ee1ff;
+  letter-spacing:2px;
   cursor:pointer;
-  border-radius:6px;
-  border:1px solid var(--blue);
-  background:transparent;
-  color:var(--blue);
-  text-shadow:0 0 8px var(--blue);
-  transition:all .25s;
+  transition:.25s;
 }
 
 #enterBtn:hover{
-  background:var(--blue);
-  color:#001;
-  box-shadow:0 0 20px var(--blue);
+  background:#72d8ff;
+  color:#06101b;
+  box-shadow:0 0 25px rgba(114,216,255,.4);
 }
 
 #welcomeMsg{
-  font-size:1.3em;
-  color:#fff;
-  text-align:center;
+  position:relative;
   max-width:520px;
-  line-height:1.5;
+  text-align:center;
+  color:#edf8ff;
+  line-height:1.65;
+  font-size:1.25rem;
 }
-
-/* =========================================================
-   HUD
-========================================================= */
 
 #crosshair{
   position:absolute;
   top:50%;
   left:50%;
-  width:6px;
-  height:6px;
-  margin:-3px 0 0 -3px;
+  width:5px;
+  height:5px;
+  margin:-2.5px 0 0 -2.5px;
   border-radius:50%;
   background:rgba(255,255,255,.72);
   z-index:20;
@@ -131,141 +161,103 @@ canvas{
 
 #hint{
   position:absolute;
-  bottom:18px;
+  bottom:17px;
   left:50%;
   transform:translateX(-50%);
-  color:#d5c8bd;
-  font-size:.85em;
-  background:rgba(25,10,8,.62);
+  z-index:20;
   padding:7px 15px;
   border-radius:20px;
-  z-index:20;
+  color:#d9d1c9;
+  background:rgba(17,12,13,.72);
+  border:1px solid rgba(224,184,145,.18);
+  font-size:.82rem;
   pointer-events:none;
-  border:1px solid rgba(220,170,130,.18);
+  white-space:nowrap;
 }
 
 #muteBtn{
   position:absolute;
-  top:16px;
-  right:16px;
+  top:15px;
+  right:15px;
   z-index:30;
-  background:rgba(25,10,8,.62);
-  color:#eadbd2;
-  border:1px solid #76544a;
-  border-radius:6px;
   padding:8px 12px;
+  border-radius:5px;
+  border:1px solid rgba(196,157,126,.4);
+  background:rgba(20,13,13,.72);
+  color:#e8d9ce;
   cursor:pointer;
-  font-size:.9em;
 }
 
 #roomLabel{
   position:absolute;
-  top:16px;
-  left:16px;
+  top:17px;
+  left:17px;
   z-index:20;
-  color:var(--blue);
-  text-shadow:0 0 8px var(--blue);
-  font-size:1em;
-  letter-spacing:2px;
   opacity:0;
-  transition:opacity .6s;
+  color:#9fe5ff;
+  text-shadow:0 0 10px rgba(114,216,255,.6);
+  letter-spacing:2px;
+  transition:opacity .5s;
 }
-
-/* =========================================================
-   MODAL
-========================================================= */
 
 .modalOverlay{
   position:absolute;
   inset:0;
+  z-index:60;
   display:none;
   align-items:center;
   justify-content:center;
-  z-index:60;
-  background:rgba(0,0,0,.6);
-  backdrop-filter:blur(2px);
+  background:rgba(0,0,0,.65);
+  backdrop-filter:blur(3px);
 }
 
 .note{
-  width:340px;
-  max-width:80vw;
-  background:var(--paper);
-  color:#3a2f22;
-  padding:26px 24px;
-  border-radius:2px;
-  box-shadow:
-    0 0 40px rgba(0,0,0,.7),
-    inset 0 0 40px rgba(120,90,50,.25);
-  transform:rotate(-1.2deg);
-  font-family:Georgia,serif;
-  position:relative;
-}
-
-.note::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 24px,
-      rgba(0,0,0,.03) 25px
-    );
-  pointer-events:none;
+  width:350px;
+  max-width:82vw;
+  padding:27px 25px;
+  background:#e8dcc3;
+  color:#382d24;
+  box-shadow:0 0 50px rgba(0,0,0,.7);
+  transform:rotate(-1deg);
 }
 
 .note h3{
-  font-size:1.15em;
-  margin-bottom:10px;
+  margin-bottom:11px;
+  padding-bottom:7px;
   border-bottom:1px solid rgba(0,0,0,.2);
-  padding-bottom:6px;
 }
 
 .note p{
-  line-height:1.5;
-  font-size:.95em;
+  line-height:1.55;
+  font-size:.95rem;
 }
 
 .note button{
-  margin-top:16px;
-  padding:8px 16px;
-  border:1px solid #3a2f22;
+  margin-top:17px;
+  padding:8px 17px;
+  border:1px solid #382d24;
   background:transparent;
+  color:#382d24;
   cursor:pointer;
-  color:#3a2f22;
 }
 
-.win{
-  background:#111;
-  color:#ffd27a;
-  border:2px solid #ffd27a;
-  box-shadow:0 0 40px #ffb84a;
-  transform:rotate(0);
+.note.win{
+  background:#091522;
+  color:#c7edff;
+  border:1px solid #72d8ff;
   text-align:center;
+  transform:none;
+  box-shadow:0 0 45px rgba(76,190,245,.28);
 }
 
-.win h3{
-  color:#ffd27a;
-  border-color:#553;
+.note.win h3{
+  color:#8de3ff;
+  border-color:rgba(114,216,255,.3);
 }
 
-.win button{
-  border-color:#ffd27a;
-  color:#ffd27a;
-}
-
-#loading{
-  position:absolute;
-  inset:0;
-  background:#000;
-  color:#5ef2ff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:100;
-  font-size:1.1em;
-  letter-spacing:2px;
+.note.win button{
+  border-color:#72d8ff;
+  color:#8de3ff;
 }
 </style>
 </head>
@@ -274,81 +266,44 @@ canvas{
 
 <div id="app">
 
-  <div id="loading">LOADING GALLERY…</div>
+  <div id="loading">ENTERING THE GALLERY…</div>
 
   <div id="welcome">
 
     <h1>RAMSHA ART STUDIO</h1>
 
-    <p>
-      an interactive gallery of cozy &amp; eerie things
-    </p>
+    <p>an interactive gallery of quiet, strange places</p>
 
     <div id="stepEnterName">
-
       <input
         id="nameInput"
-        placeholder="Enter your name"
         maxlength="20"
+        autocomplete="off"
+        placeholder="Enter your name"
       >
 
-      <br>
-
-      <button id="enterBtn">
-        ENTER GALLERY
-      </button>
-
+      <button id="enterBtn">ENTER GALLERY</button>
     </div>
 
-    <div
-      id="welcomeMsg"
-      style="display:none;"
-    ></div>
+    <div id="welcomeMsg" style="display:none"></div>
 
   </div>
 
   <div id="roomLabel"></div>
 
-  <div
-    id="crosshair"
-    style="display:none;"
-  ></div>
+  <div id="crosshair" style="display:none"></div>
 
-  <div
-    id="hint"
-    style="display:none;"
-  >
+  <div id="hint" style="display:none">
     WASD to move · mouse to look · click a painting
   </div>
 
-  <button
-    id="muteBtn"
-    style="display:none;"
-  >
-    🔊 Sound
-  </button>
+  <button id="muteBtn" style="display:none">🔊 Sound</button>
 
-  <div
-    class="modalOverlay"
-    id="noteOverlay"
-  >
-    <div
-      class="note"
-      id="noteBox"
-    >
-
-      <h3 id="noteTitle">
-        Untitled
-      </h3>
-
-      <p id="noteBody">
-        ...
-      </p>
-
-      <button id="noteClose">
-        close
-      </button>
-
+  <div class="modalOverlay" id="noteOverlay">
+    <div class="note" id="noteBox">
+      <h3 id="noteTitle">Untitled</h3>
+      <p id="noteBody"></p>
+      <button id="noteClose">close</button>
     </div>
   </div>
 
@@ -358,9 +313,9 @@ canvas{
 
 <script>
 
-/* ============================================================
-   UI
-============================================================ */
+/* =========================================================
+   BASIC UI
+========================================================= */
 
 const $ = id => document.getElementById(id);
 
@@ -368,191 +323,93 @@ let gameStarted = false;
 let galleryReady = false;
 let dom = null;
 
-function showFatalError(msg){
-
-  const lbl = $('roomLabel');
-
-  lbl.style.opacity = 1;
-  lbl.style.color = '#ff6b6b';
-  lbl.textContent = '⚠ ' + msg;
-
-  console.error(msg);
+function showFatalError(message){
+  console.error(message);
+  const label=$("roomLabel");
+  label.style.opacity=1;
+  label.style.color="#ff7777";
+  label.textContent="⚠ "+message;
 }
 
-$('enterBtn').onclick = () => {
+$("enterBtn").onclick=()=>{
 
-  const name =
-    $('nameInput').value.trim() || 'friend';
+  const name=$("nameInput").value.trim() || "friend";
 
-  $('stepEnterName').style.display = 'none';
+  $("stepEnterName").style.display="none";
 
-  const wm = $('welcomeMsg');
-
-  wm.style.display = 'block';
-
-  wm.textContent =
+  $("welcomeMsg").style.display="block";
+  $("welcomeMsg").textContent=
     `Welcome, ${name}. Your artwork is waiting for you in Lobby 1.`;
 
   try{
     startAudio();
   }catch(e){
-    console.warn('Audio failed:',e);
+    console.warn("Audio unavailable:",e);
   }
 
-  setTimeout(() => {
+  setTimeout(()=>{
 
-    $('welcome').style.display = 'none';
+    $("welcome").style.display="none";
+    $("crosshair").style.display="block";
+    $("hint").style.display="block";
+    $("muteBtn").style.display="block";
 
-    $('crosshair').style.display = 'block';
-    $('hint').style.display = 'block';
-    $('muteBtn').style.display = 'block';
-
-    gameStarted = true;
+    gameStarted=true;
 
     if(!galleryReady){
-
-      showFatalError(
-        '3D engine did not start — open the browser console (F12) for details.'
-      );
-
-    }else if(dom){
-
+      showFatalError("3D engine did not start.");
+    }else{
       dom.requestPointerLock();
     }
 
   },2200);
 };
 
-$('muteBtn').onclick = () => {
+$("muteBtn").onclick=()=>{
 
-  muted = !muted;
+  muted=!muted;
 
   if(master){
-    master.gain.value =
-      muted ? 0 : .25;
+    master.gain.value=muted ? 0 : .25;
   }
 
-  $('muteBtn').textContent =
-    muted
-      ? '🔇 Sound'
-      : '🔊 Sound';
+  $("muteBtn").textContent=
+    muted ? "🔇 Sound" : "🔊 Sound";
 };
 
-$('noteClose').onclick = () => {
-
-  $('noteOverlay').style.display = 'none';
+$("noteClose").onclick=()=>{
+  $("noteOverlay").style.display="none";
 };
 
-function openNote(d){
 
-  if(dom)
-    document.exitPointerLock();
-
-  const box = $('noteBox');
-
-  box.classList.toggle(
-    'win',
-    !!d.winner
-  );
-
-  $('noteTitle').textContent =
-    d.winner
-      ? '🎉 You found a free print!'
-      : d.label;
-
-  $('noteBody').textContent =
-    d.story;
-
-  $('noteOverlay').style.display =
-    'flex';
-}
-
-
-/* ============================================================
+/* =========================================================
    AUDIO
-============================================================ */
+========================================================= */
 
-let audioCtx;
-let master;
-let noiseSrc;
-let droneOsc;
-let muted = false;
-let footstepTimer = 0;
-
-function footstepTick(dt){
-
-  if(!audioCtx || muted)
-    return;
-
-  footstepTimer -= dt;
-
-  if(footstepTimer > 0)
-    return;
-
-  footstepTimer = .38;
-
-  const o =
-    audioCtx.createOscillator();
-
-  const g =
-    audioCtx.createGain();
-
-  o.type = 'triangle';
-
-  o.frequency.value =
-    82 + Math.random()*25;
-
-  g.gain.value = 0;
-
-  o.connect(g).connect(master);
-
-  const now =
-    audioCtx.currentTime;
-
-  g.gain.linearRampToValueAtTime(
-    .035,
-    now+.015
-  );
-
-  g.gain.exponentialRampToValueAtTime(
-    .001,
-    now+.09
-  );
-
-  o.start(now);
-  o.stop(now+.1);
-}
+let audioCtx=null;
+let master=null;
+let noiseSrc=null;
+let droneOsc=null;
+let muted=false;
+let footstepTimer=0;
 
 function startAudio(){
 
-  if(audioCtx)
-    return;
+  if(audioCtx)return;
 
-  audioCtx =
-    new(
-      window.AudioContext ||
-      window.webkitAudioContext
-    )();
+  audioCtx=
+    new(window.AudioContext||window.webkitAudioContext)();
 
-  master =
-    audioCtx.createGain();
+  master=audioCtx.createGain();
+  master.gain.value=.25;
+  master.connect(audioCtx.destination);
 
-  master.gain.value = .25;
+  droneOsc=audioCtx.createOscillator();
+  droneOsc.type="sine";
+  droneOsc.frequency.value=49;
 
-  master.connect(
-    audioCtx.destination
-  );
-
-  droneOsc =
-    audioCtx.createOscillator();
-
-  droneOsc.type = 'sine';
-  droneOsc.frequency.value = 55;
-
-  const droneGain =
-    audioCtx.createGain();
-
-  droneGain.gain.value = .11;
+  const droneGain=audioCtx.createGain();
+  droneGain.gain.value=.12;
 
   droneOsc
     .connect(droneGain)
@@ -560,41 +417,31 @@ function startAudio(){
 
   droneOsc.start();
 
-  const bufSize =
-    2 * audioCtx.sampleRate;
+  const length=2*audioCtx.sampleRate;
 
-  const buf =
+  const buffer=
     audioCtx.createBuffer(
       1,
-      bufSize,
+      length,
       audioCtx.sampleRate
     );
 
-  const data =
-    buf.getChannelData(0);
+  const data=buffer.getChannelData(0);
 
-  for(let i=0;i<bufSize;i++){
-
-    data[i] =
-      Math.random()*2-1;
+  for(let i=0;i<length;i++){
+    data[i]=(Math.random()*2-1);
   }
 
-  noiseSrc =
-    audioCtx.createBufferSource();
+  noiseSrc=audioCtx.createBufferSource();
+  noiseSrc.buffer=buffer;
+  noiseSrc.loop=true;
 
-  noiseSrc.buffer = buf;
-  noiseSrc.loop = true;
+  const filter=audioCtx.createBiquadFilter();
+  filter.type="lowpass";
+  filter.frequency.value=420;
 
-  const filter =
-    audioCtx.createBiquadFilter();
-
-  filter.type = 'lowpass';
-  filter.frequency.value = 450;
-
-  const noiseGain =
-    audioCtx.createGain();
-
-  noiseGain.gain.value = .025;
+  const noiseGain=audioCtx.createGain();
+  noiseGain.gain.value=.018;
 
   noiseSrc
     .connect(filter)
@@ -603,125 +450,119 @@ function startAudio(){
 
   noiseSrc.start();
 
-  setInterval(() => {
+  setInterval(()=>{
 
-    if(
-      muted ||
-      !gameStarted ||
-      !galleryReady
-    )
-      return;
+    if(!audioCtx || muted || !gameStarted)return;
 
-    const near =
-      currentRoom();
+    const room=currentRoom();
 
-    const o =
-      audioCtx.createOscillator();
+    const osc=audioCtx.createOscillator();
+    const gain=audioCtx.createGain();
 
-    const g =
-      audioCtx.createGain();
+    const eerie=
+      room &&
+      room.tag==="LOBBY 5";
 
-    const spooky =
-      near &&
-      near.tag === 'LOBBY 5';
+    osc.type=eerie ? "triangle" : "sine";
+    osc.frequency.value=
+      eerie
+      ? 100+Math.random()*170
+      : 250+Math.random()*160;
 
-    o.type =
-      spooky
-        ? 'sawtooth'
-        : 'sine';
+    gain.gain.value=0;
 
-    o.frequency.value =
-      spooky
-        ? 120+Math.random()*200
-        : 300+Math.random()*200;
+    osc.connect(gain).connect(master);
 
-    g.gain.value = 0;
+    const now=audioCtx.currentTime;
 
-    o.connect(g).connect(master);
+    osc.start(now);
 
-    o.start();
-
-    g.gain.linearRampToValueAtTime(
-      spooky ? .055 : .022,
-      audioCtx.currentTime+.3
+    gain.gain.linearRampToValueAtTime(
+      eerie?.035:.012,
+      now+.35
     );
 
-    g.gain.linearRampToValueAtTime(
+    gain.gain.linearRampToValueAtTime(
       0,
-      audioCtx.currentTime+1.4
+      now+1.7
     );
 
-    o.stop(
-      audioCtx.currentTime+1.5
-    );
+    osc.stop(now+1.8);
 
-  },5000);
+  },5500);
 }
 
-function currentRoom(){
+function footstepTick(dt){
 
-  if(
-    !window._rooms ||
-    !window._camera
-  )
-    return null;
+  if(!audioCtx || muted)return;
 
-  return window._rooms.reduce(
-    (a,r) =>
-      Math.abs(
-        r.z-window._camera.position.z
-      )
-      <
-      Math.abs(
-        a.z-window._camera.position.z
-      )
-        ? r
-        : a,
-    window._rooms[0]
+  footstepTimer-=dt;
+
+  if(footstepTimer>0)return;
+
+  footstepTimer=.38;
+
+  const osc=audioCtx.createOscillator();
+  const gain=audioCtx.createGain();
+
+  osc.type="triangle";
+  osc.frequency.value=75+Math.random()*25;
+
+  gain.gain.value=0;
+
+  osc.connect(gain).connect(master);
+
+  const now=audioCtx.currentTime;
+
+  gain.gain.linearRampToValueAtTime(
+    .025,
+    now+.015
   );
+
+  gain.gain.exponentialRampToValueAtTime(
+    .001,
+    now+.085
+  );
+
+  osc.start(now);
+  osc.stop(now+.1);
 }
 
 
-/* ============================================================
-   THREE SETUP
-============================================================ */
+/* =========================================================
+   THREE.JS
+========================================================= */
 
-let scene;
-let camera;
-let renderer;
-let clock;
+let scene,camera,renderer,clock;
 
 try{
 
-  scene =
-    new THREE.Scene();
+  scene=new THREE.Scene();
 
-  scene.background =
-    new THREE.Color(
-      0x070607
-    );
+  scene.background=
+    new THREE.Color(0x05070c);
 
-  scene.fog =
+  scene.fog=
     new THREE.FogExp2(
-      0x090708,
+      0x07090e,
       .010
     );
 
-  camera =
+  camera=
     new THREE.PerspectiveCamera(
       72,
       innerWidth/innerHeight,
       .1,
-      240
+      220
     );
 
   camera.position.set(
     0,
-    1.7,
+    1.68,
     5
   );
 
-  renderer =
+  renderer=
     new THREE.WebGLRenderer({
       antialias:true
     });
@@ -732,109 +573,110 @@ try{
   );
 
   renderer.setPixelRatio(
-    Math.min(
-      window.devicePixelRatio,
-      2
-    )
+    Math.min(devicePixelRatio,2)
   );
 
-  renderer.shadowMap.enabled = true;
-
-  renderer.shadowMap.type =
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=
     THREE.PCFSoftShadowMap;
 
-  renderer.outputEncoding =
+  renderer.outputEncoding=
     THREE.sRGBEncoding;
 
-  document
-    .getElementById('app')
-    .prepend(
-      renderer.domElement
-    );
+  renderer.toneMapping=
+    THREE.ACESFilmicToneMapping;
 
-  dom =
-    renderer.domElement;
+  renderer.toneMappingExposure=.9;
 
-  clock =
-    new THREE.Clock();
+  $("app").prepend(renderer.domElement);
 
-  $('loading').style.display =
-    'none';
+  dom=renderer.domElement;
 
-  galleryReady = true;
+  clock=new THREE.Clock();
 
-}catch(err){
+  galleryReady=true;
 
-  console.error(err);
+  $("loading").style.display="none";
+
+}catch(error){
+
+  console.error(error);
 
   showFatalError(
-    '3D engine failed to initialise.'
+    "3D engine failed to initialise."
   );
 }
 
 
-/* ============================================================
+/* =========================================================
    LIGHTING
-============================================================ */
+========================================================= */
 
-const ambient =
+scene.add(
+  new THREE.HemisphereLight(
+    0x18283b,
+    0x140b0a,
+    .9
+  )
+);
+
+scene.add(
   new THREE.AmbientLight(
-    0x392d2d,
-    1.0
-  );
+    0x18202d,
+    .55
+  )
+);
 
-scene.add(ambient);
 
+/* =========================================================
+   HELPERS
+========================================================= */
 
-/* ============================================================
-   MATERIAL HELPERS
-============================================================ */
-
-function M(color,opts={}){
+function material(color,opts={}){
 
   return new THREE.MeshStandardMaterial({
 
-    color:color,
+    color,
 
     roughness:
-      opts.roughness !== undefined
-        ? opts.roughness
-        : .82,
+      opts.roughness!==undefined
+      ?opts.roughness
+      :.82,
 
     metalness:
-      opts.metalness !== undefined
-        ? opts.metalness
-        : 0,
+      opts.metalness!==undefined
+      ?opts.metalness
+      :0,
 
     emissive:
-      opts.emissive !== undefined
-        ? opts.emissive
-        : 0x000000,
+      opts.emissive!==undefined
+      ?opts.emissive
+      :0x000000,
 
     emissiveIntensity:
-      opts.emissiveIntensity !== undefined
-        ? opts.emissiveIntensity
-        : 0,
+      opts.emissiveIntensity!==undefined
+      ?opts.emissiveIntensity
+      :0,
 
     transparent:
-      opts.transparent || false,
+      opts.transparent||false,
 
     opacity:
-      opts.opacity !== undefined
-        ? opts.opacity
-        : 1,
+      opts.opacity!==undefined
+      ?opts.opacity
+      :1,
 
     side:
-      opts.side !== undefined
-        ? opts.side
-        : THREE.FrontSide
+      opts.side!==undefined
+      ?opts.side
+      :THREE.FrontSide
   });
 }
 
-function addMesh(
+function mesh(
   parent,
   geometry,
-  material,
+  mat,
   x=0,
   y=0,
   z=0,
@@ -843,26 +685,20 @@ function addMesh(
   rz=0
 ){
 
-  const mesh =
-    new THREE.Mesh(
-      geometry,
-      material
-    );
-
-  mesh.position.set(
-    x,y,z
+  const m=new THREE.Mesh(
+    geometry,
+    mat
   );
 
-  mesh.rotation.set(
-    rx,ry,rz
-  );
+  m.position.set(x,y,z);
+  m.rotation.set(rx,ry,rz);
 
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
+  m.castShadow=true;
+  m.receiveShadow=true;
 
-  parent.add(mesh);
+  parent.add(m);
 
-  return mesh;
+  return m;
 }
 
 function box(
@@ -874,12 +710,10 @@ function box(
   opts={}
 ){
 
-  return addMesh(
+  return mesh(
     parent,
-    new THREE.BoxGeometry(
-      w,h,d
-    ),
-    M(color,opts),
+    new THREE.BoxGeometry(w,h,d),
+    material(color,opts),
     x,y,z,
     0,ry,0
   );
@@ -894,75 +728,55 @@ function sphere(
   opts={}
 ){
 
-  const mesh =
-    addMesh(
-      parent,
-      new THREE.SphereGeometry(
-        radius,
-        18,
-        12
-      ),
-      M(color,opts),
-      x,y,z
-    );
+  const m=mesh(
+    parent,
+    new THREE.SphereGeometry(
+      radius,
+      20,
+      14
+    ),
+    material(color,opts),
+    x,y,z
+  );
 
-  mesh.scale.set(
+  m.scale.set(
     scale[0],
     scale[1],
     scale[2]
   );
 
-  return mesh;
+  return m;
 }
 
-function cyl(
+function cylinder(
   parent,
-  r1,r2,h,
+  radiusTop,
+  radiusBottom,
+  height,
   color,
   x,y,z,
-  segments=16,
-  ry=0,
-  opts={}
-){
-
-  return addMesh(
-    parent,
-    new THREE.CylinderGeometry(
-      r1,r2,h,segments
-    ),
-    M(color,opts),
-    x,y,z,
-    0,ry,0
-  );
-}
-
-function torus(
-  parent,
-  radius,
-  tube,
-  color,
-  x,y,z,
+  segments=18,
   rx=0,
   ry=0,
   rz=0,
   opts={}
 ){
 
-  return addMesh(
+  return mesh(
     parent,
-    new THREE.TorusGeometry(
-      radius,
-      tube,
-      10,
-      24
+    new THREE.CylinderGeometry(
+      radiusTop,
+      radiusBottom,
+      height,
+      segments
     ),
-    M(color,opts),
+    material(color,opts),
     x,y,z,
     rx,ry,rz
   );
 }
 
-function tubeBetween(
+function lineBetween(
   parent,
   a,
   b,
@@ -971,82 +785,147 @@ function tubeBetween(
   opts={}
 ){
 
-  const dir =
-    new THREE.Vector3()
-      .subVectors(a,b);
-
-  const realDir =
+  const direction=
     new THREE.Vector3()
       .subVectors(b,a);
 
-  const len =
-    realDir.length();
+  const length=
+    direction.length();
 
-  const mesh =
-    new THREE.Mesh(
-      new THREE.CylinderGeometry(
-        radius,
-        radius,
-        len,
-        8
-      ),
-      M(color,opts)
-    );
+  const m=new THREE.Mesh(
+    new THREE.CylinderGeometry(
+      radius,
+      radius,
+      length,
+      8
+    ),
+    material(color,opts)
+  );
 
-  mesh.position
+  m.position
     .copy(a)
     .add(b)
     .multiplyScalar(.5);
 
-  mesh.quaternion.setFromUnitVectors(
+  m.quaternion.setFromUnitVectors(
     new THREE.Vector3(0,1,0),
-    realDir.normalize()
+    direction.normalize()
   );
 
-  mesh.castShadow = true;
+  m.castShadow=true;
 
-  parent.add(mesh);
+  parent.add(m);
 
-  return mesh;
+  return m;
 }
 
 
-/* ============================================================
+/* =========================================================
    TEXTURES
-============================================================ */
+========================================================= */
 
-function canvasTexture(
-  draw,
-  w=512,
-  h=384
-){
+function canvasTexture(draw,w=512,h=384){
 
-  const c =
-    document.createElement(
-      'canvas'
-    );
+  const canvas=
+    document.createElement("canvas");
 
-  c.width=w;
-  c.height=h;
+  canvas.width=w;
+  canvas.height=h;
 
-  const ctx =
-    c.getContext('2d');
+  const ctx=
+    canvas.getContext("2d");
 
   draw(ctx,w,h);
 
-  const texture =
-    new THREE.CanvasTexture(c);
+  const texture=
+    new THREE.CanvasTexture(canvas);
 
-  texture.wrapS =
-    THREE.ClampToEdgeWrapping;
-
-  texture.wrapT =
-    THREE.ClampToEdgeWrapping;
-
-  texture.encoding =
+  texture.encoding=
     THREE.sRGBEncoding;
 
   return texture;
+}
+
+function paintingTexture(label,hue=210){
+
+  return canvasTexture(
+    (ctx,w,h)=>{
+
+      const gradient=
+        ctx.createLinearGradient(
+          0,0,w,h
+        );
+
+      gradient.addColorStop(
+        0,
+        `hsl(${hue},28%,28%)`
+      );
+
+      gradient.addColorStop(
+        .55,
+        `hsl(${hue},24%,12%)`
+      );
+
+      gradient.addColorStop(
+        1,
+        "#050609"
+      );
+
+      ctx.fillStyle=gradient;
+      ctx.fillRect(0,0,w,h);
+
+      ctx.fillStyle=
+        `hsla(${hue},65%,75%,.12)`;
+
+      ctx.beginPath();
+      ctx.arc(
+        w*.68,
+        h*.3,
+        h*.16,
+        0,
+        Math.PI*2
+      );
+      ctx.fill();
+
+      ctx.strokeStyle=
+        `hsla(${hue},65%,80%,.25)`;
+
+      ctx.lineWidth=4;
+
+      ctx.beginPath();
+
+      ctx.moveTo(
+        w*.06,
+        h*.76
+      );
+
+      ctx.quadraticCurveTo(
+        w*.4,
+        h*.48,
+        w*.94,
+        h*.75
+      );
+
+      ctx.stroke();
+
+      ctx.fillStyle=
+        "rgba(255,255,255,.78)";
+
+      ctx.font=
+        "25px Georgia";
+
+      ctx.textAlign="center";
+
+      ctx.fillText(
+        label,
+        w/2,
+        h*.9
+      );
+
+    },
+    640,
+    450
+  );
 }
 
 function wallpaperTexture(){
@@ -1054,66 +933,54 @@ function wallpaperTexture(){
   return canvasTexture(
     (ctx,w,h)=>{
 
-      ctx.fillStyle =
-        '#4b171d';
+      ctx.fillStyle="#27343a";
+      ctx.fillRect(0,0,w,h);
 
-      ctx.fillRect(
-        0,0,w,h
-      );
+      for(let x=18;x<w;x+=58){
 
-      for(
-        let x=0;
-        x<w;
-        x+=54
-      ){
-
-        ctx.strokeStyle =
-          'rgba(226,151,125,.15)';
+        ctx.strokeStyle=
+          "rgba(206,186,151,.075)";
 
         ctx.lineWidth=2;
 
         ctx.beginPath();
 
         for(
-          let y=-20;
+          let y=-30;
           y<h+30;
-          y+=29
+          y+=30
         ){
 
-          ctx.moveTo(
-            x,y
-          );
+          ctx.moveTo(x,y);
 
           ctx.quadraticCurveTo(
-            x+27,
-            y+14,
+            x+25,
+            y+15,
             x,
-            y+29
+            y+30
           );
         }
 
         ctx.stroke();
       }
 
-      for(
-        let x=27;
-        x<w;
-        x+=108
-      ){
+      for(let x=29;x<w;x+=116){
 
         for(
-          let y=24;
+          let y=22;
           y<h;
-          y+=57
+          y+=62
         ){
 
-          ctx.fillStyle =
-            'rgba(244,181,145,.12)';
+          ctx.fillStyle=
+            "rgba(220,198,161,.06)";
 
           ctx.beginPath();
 
           ctx.arc(
-            x,y,3,
+            x,
+            y,
+            2.5,
             0,
             Math.PI*2
           );
@@ -1121,63 +988,7 @@ function wallpaperTexture(){
           ctx.fill();
         }
       }
-    },
-    512,
-    512
-  );
-}
 
-function woodTexture(){
-
-  return canvasTexture(
-    (ctx,w,h)=>{
-
-      ctx.fillStyle =
-        '#382017';
-
-      ctx.fillRect(
-        0,0,w,h
-      );
-
-      for(
-        let y=0;
-        y<h;
-        y+=38
-      ){
-
-        ctx.fillStyle =
-          y%76===0
-            ? '#4b2a20'
-            : '#291612';
-
-        ctx.fillRect(
-          0,
-          y,
-          w,
-          30
-        );
-
-        ctx.strokeStyle =
-          'rgba(190,115,72,.14)';
-
-        ctx.beginPath();
-
-        ctx.moveTo(
-          0,
-          y+11
-        );
-
-        ctx.bezierCurveTo(
-          w*.25,
-          y+2,
-          w*.65,
-          y+20,
-          w,
-          y+9
-        );
-
-        ctx.stroke();
-      }
     },
     512,
     512
@@ -1189,243 +1000,80 @@ function runnerTexture(){
   return canvasTexture(
     (ctx,w,h)=>{
 
-      ctx.fillStyle =
-        '#321619';
+      ctx.fillStyle="#321d24";
+      ctx.fillRect(0,0,w,h);
 
+      ctx.fillStyle="#442832";
       ctx.fillRect(
-        0,0,w,h
+        w*.12,
+        0,
+        w*.76,
+        h
       );
 
-      for(
-        let y=0;
-        y<h;
-        y+=70
-      ){
+      ctx.strokeStyle=
+        "rgba(190,139,120,.24)";
 
-        ctx.strokeStyle =
-          'rgba(198,129,91,.12)';
+      ctx.lineWidth=5;
 
-        ctx.lineWidth=3;
+      ctx.strokeRect(
+        w*.19,
+        0,
+        w*.62,
+        h
+      );
 
-        ctx.strokeRect(
-          8,
-          y+8,
-          w-16,
-          54
-        );
-      }
+      for(let y=0;y<h;y+=80){
 
-      for(
-        let y=20;
-        y<h;
-        y+=70
-      ){
-
-        ctx.fillStyle =
-          'rgba(220,155,108,.12)';
+        ctx.strokeStyle=
+          "rgba(218,173,146,.12)";
 
         ctx.beginPath();
-
-        ctx.arc(
-          w/2,
-          y,
-          7,
-          0,
-          Math.PI*2
+        ctx.moveTo(
+          w*.19,
+          y
         );
-
-        ctx.fill();
+        ctx.lineTo(
+          w*.81,
+          y
+        );
+        ctx.stroke();
       }
+
     },
     256,
     1024
   );
 }
 
-function placeholderArt(
-  label,
-  hue=210
-){
 
-  return canvasTexture(
-    (ctx,w,h)=>{
-
-      const grad =
-        ctx.createLinearGradient(
-          0,0,w,h
-        );
-
-      grad.addColorStop(
-        0,
-        `hsl(${hue},30%,27%)`
-      );
-
-      grad.addColorStop(
-        .55,
-        `hsl(${hue},23%,11%)`
-      );
-
-      grad.addColorStop(
-        1,
-        '#050508'
-      );
-
-      ctx.fillStyle=grad;
-
-      ctx.fillRect(
-        0,0,w,h
-      );
-
-      ctx.fillStyle =
-        `hsla(${hue},70%,75%,.15)`;
-
-      ctx.beginPath();
-
-      ctx.arc(
-        w*.68,
-        h*.3,
-        h*.16,
-        0,
-        Math.PI*2
-      );
-
-      ctx.fill();
-
-      ctx.strokeStyle =
-        `hsla(${hue},60%,80%,.23)`;
-
-      ctx.lineWidth=4;
-
-      ctx.beginPath();
-
-      ctx.moveTo(
-        w*.08,
-        h*.72
-      );
-
-      ctx.quadraticCurveTo(
-        w*.42,
-        h*.50,
-        w*.92,
-        h*.76
-      );
-
-      ctx.stroke();
-
-      if(label){
-
-        ctx.fillStyle =
-          'rgba(255,255,255,.82)';
-
-        ctx.font =
-          'bold 25px Georgia';
-
-        ctx.textAlign =
-          'center';
-
-        ctx.fillText(
-          label,
-          w/2,
-          h*.89
-        );
-      }
-    },
-    640,
-    450
-  );
-}
-
-function signTexture(
-  text,
-  color
-){
-
-  return canvasTexture(
-    (ctx,w,h)=>{
-
-      ctx.fillStyle =
-        '#160d10';
-
-      ctx.fillRect(
-        0,0,w,h
-      );
-
-      ctx.strokeStyle =
-        color;
-
-      ctx.lineWidth=7;
-
-      ctx.strokeRect(
-        12,
-        12,
-        w-24,
-        h-24
-      );
-
-      ctx.shadowColor =
-        color;
-
-      ctx.shadowBlur=20;
-
-      ctx.fillStyle =
-        color;
-
-      ctx.font =
-        'bold 48px Georgia';
-
-      ctx.textAlign =
-        'center';
-
-      ctx.textBaseline =
-        'middle';
-
-      ctx.fillText(
-        text,
-        w/2,
-        h/2
-      );
-
-      ctx.shadowBlur=0;
-    },
-    700,
-    170
-  );
-}
-
-
-/* ============================================================
+/* =========================================================
    PAINTINGS
-============================================================ */
+========================================================= */
 
 const clickable=[];
 
-function createPainting(
-  cfg,
-  parent
-){
+function createPainting(cfg,parent){
 
-  const w =
-    cfg.w || 1.55;
+  const w=cfg.w||1.35;
+  const h=cfg.h||.95;
 
-  const h =
-    cfg.h || 1.08;
-
-  const artMat =
+  const artMat=
     new THREE.MeshStandardMaterial({
+
       map:
         cfg.texture ||
-        placeholderArt(
-          cfg.label,
-          cfg.hue || 210
+        paintingTexture(
+          cfg.label||"",
+          cfg.hue||210
         ),
-      roughness:.78
+
+      roughness:.88
     });
 
-  const art =
+  const art=
     new THREE.Mesh(
-      new THREE.PlaneGeometry(
-        w,h
-      ),
+      new THREE.PlaneGeometry(w,h),
       artMat
     );
 
@@ -1435,24 +1083,21 @@ function createPainting(
     cfg.z
   );
 
-  art.rotation.y =
-    cfg.ry || 0;
+  art.rotation.y=
+    cfg.ry||0;
 
   art.castShadow=false;
 
-  const frame =
+  const frame=
     new THREE.Mesh(
       new THREE.BoxGeometry(
-        w+.16,
-        h+.16,
+        w+.15,
+        h+.15,
         .075
       ),
-      M(
-        cfg.frameColor ||
-        0x24150f,
-        {
-          roughness:.48
-        }
+      material(
+        cfg.frame||0x261812,
+        {roughness:.48}
       )
     );
 
@@ -1482,7 +1127,7 @@ function createPainting(
         cfg.img,
         tex=>{
 
-          tex.encoding =
+          tex.encoding=
             THREE.sRGBEncoding;
 
           artMat.map=tex;
@@ -1498,21 +1143,18 @@ function createPainting(
 }
 
 
-/* ============================================================
-   GALLERY ARCHITECTURE
-============================================================ */
+/* =========================================================
+   ARCHITECTURE
+========================================================= */
 
 const HALL_HALF=1.4;
-
 const HALL_LENGTH=132;
 
 const ROOM_W=15;
-
 const ROOM_D=24;
-
 const ROOM_H=4.8;
 
-const DOOR_HALF=1.55;
+const DOOR_HALF=1.62;
 
 const lobbyCenters=[
   18,
@@ -1523,82 +1165,344 @@ const lobbyCenters=[
 ];
 
 const rooms=[];
-
 const flickerLights=[];
-
 const fireMeshes=[];
-
 const snowParticles=[];
-
 const rainParticles=[];
-
 const pendulums=[];
+const movingLights=[];
 
-const animatedObjects=[];
 
-
-/* ============================================================
+/* =========================================================
    HALLWAY FLOOR
-============================================================ */
+========================================================= */
 
-const hallFloorTex =
-  woodTexture();
+const floorTexture=runnerTexture();
 
-hallFloorTex.wrapS =
-hallFloorTex.wrapT =
+floorTexture.wrapS=
+  floorTexture.wrapT=
   THREE.RepeatWrapping;
 
-hallFloorTex.repeat.set(
-  2,
-  20
+floorTexture.repeat.set(
+  1,
+  18
 );
 
-const hallwayFloor =
+const hallFloor=
   new THREE.Mesh(
     new THREE.PlaneGeometry(
       HALL_HALF*2,
       HALL_LENGTH
     ),
     new THREE.MeshStandardMaterial({
-      map:hallFloorTex,
+      map:floorTexture,
       roughness:.9
     })
   );
 
-hallwayFloor.rotation.x =
-  -Math.PI/2;
-
-hallwayFloor.position.set(
+hallFloor.rotation.x=-Math.PI/2;
+hallFloor.position.set(
   0,
   0,
   HALL_LENGTH/2
 );
 
-hallwayFloor.receiveShadow=true;
+hallFloor.receiveShadow=true;
 
-scene.add(
-  hallwayFloor
+scene.add(hallFloor);
+
+
+/* =========================================================
+   HALLWAY WALLS
+   REAL CONTINUOUS WALLS WITH REAL DOOR OPENINGS
+========================================================= */
+
+function buildHallSide(side){
+
+  const x=side*HALL_HALF;
+
+  const wallColor=0x2b2023;
+  const lowerColor=0x211514;
+  const trimColor=0x63463b;
+
+  let cursor=1;
+
+  for(const zc of lobbyCenters){
+
+    const openingStart=
+      zc-DOOR_HALF-.05;
+
+    const openingEnd=
+      zc+DOOR_HALF+.05;
+
+    if(openingStart>cursor){
+
+      const length=
+        openingStart-cursor;
+
+      box(
+        scene,
+        .20,
+        ROOM_H,
+        length,
+        wallColor,
+        x,
+        ROOM_H/2,
+        (cursor+openingStart)/2
+      );
+
+      box(
+        scene,
+        .23,
+        .92,
+        length,
+        lowerColor,
+        x-side*.03,
+        .46,
+        (cursor+openingStart)/2
+      );
+
+      box(
+        scene,
+        .25,
+        .09,
+        length,
+        trimColor,
+        x-side*.04,
+        .98,
+        (cursor+openingStart)/2
+      );
+    }
+
+    cursor=openingEnd;
+  }
+
+  if(cursor<HALL_LENGTH){
+
+    const length=
+      HALL_LENGTH-cursor;
+
+    box(
+      scene,
+      .20,
+      ROOM_H,
+      length,
+      wallColor,
+      x,
+      ROOM_H/2,
+      (cursor+HALL_LENGTH)/2
+    );
+
+    box(
+      scene,
+      .23,
+      .92,
+      length,
+      lowerColor,
+      x-side*.03,
+      .46,
+      (cursor+HALL_LENGTH)/2
+    );
+
+    box(
+      scene,
+      .25,
+      .09,
+      length,
+      trimColor,
+      x-side*.04,
+      .98,
+      (cursor+HALL_LENGTH)/2
+    );
+  }
+
+  /*
+    Wallpaper panels are deliberately inset
+    into the wall so the hallway feels finished,
+    rather than like two floating slabs.
+  */
+
+  let panelCursor=1;
+
+  for(const zc of lobbyCenters){
+
+    const end=
+      zc-DOOR_HALF-.1;
+
+    if(end>panelCursor){
+
+      const length=end-panelCursor;
+
+      const tex=wallpaperTexture();
+
+      tex.wrapS=
+        tex.wrapT=
+        THREE.RepeatWrapping;
+
+      tex.repeat.set(
+        1,
+        Math.max(1,length/5)
+      );
+
+      const panel=
+        new THREE.Mesh(
+          new THREE.PlaneGeometry(
+            ROOM_H-1.18,
+            length
+          ),
+          new THREE.MeshStandardMaterial({
+            map:tex,
+            roughness:1
+          })
+        );
+
+      panel.rotation.y=
+        side<0
+        ?Math.PI/2
+        :-Math.PI/2;
+
+      panel.position.set(
+        x-side*.111,
+        2.86,
+        (panelCursor+end)/2
+      );
+
+      scene.add(panel);
+    }
+
+    panelCursor=
+      zc+DOOR_HALF+.1;
+  }
+
+  if(panelCursor<HALL_LENGTH){
+
+    const length=
+      HALL_LENGTH-panelCursor;
+
+    const tex=wallpaperTexture();
+
+    tex.wrapS=
+      tex.wrapT=
+      THREE.RepeatWrapping;
+
+    tex.repeat.set(
+      1,
+      Math.max(1,length/5)
+    );
+
+    const panel=
+      new THREE.Mesh(
+        new THREE.PlaneGeometry(
+          ROOM_H-1.18,
+          length
+        ),
+        new THREE.MeshStandardMaterial({
+          map:tex,
+          roughness:1
+        })
+      );
+
+    panel.rotation.y=
+      side<0
+      ?Math.PI/2
+      :-Math.PI/2;
+
+    panel.position.set(
+      x-side*.111,
+      2.86,
+      (panelCursor+HALL_LENGTH)/2
+    );
+
+    scene.add(panel);
+  }
+
+  /*
+    Vertical architectural divisions.
+  */
+
+  for(let z=4;z<HALL_LENGTH;z+=8){
+
+    box(
+      scene,
+      .25,
+      ROOM_H,
+      .075,
+      0x5b4038,
+      x-side*.08,
+      ROOM_H/2,
+      z
+    );
+  }
+
+  /*
+    Baseboard.
+  */
+
+  box(
+    scene,
+    .26,
+    .16,
+    HALL_LENGTH,
+    0x6a493d,
+    x-side*.07,
+    .08,
+    HALL_LENGTH/2
+  );
+}
+
+buildHallSide(-1);
+buildHallSide(1);
+
+
+/* =========================================================
+   CEILING + BEAMS
+========================================================= */
+
+box(
+  scene,
+  HALL_HALF*2,
+  .18,
+  HALL_LENGTH,
+  0x151013,
+  0,
+  4.82,
+  HALL_LENGTH/2
 );
 
+for(let z=7;z<HALL_LENGTH;z+=8){
 
-/* runner */
+  box(
+    scene,
+    HALL_HALF*2+.2,
+    .22,
+    .28,
+    0x3b2924,
+    0,
+    4.68,
+    z
+  );
+}
 
-const runnerTex =
-  runnerTexture();
 
-runnerTex.wrapS =
-runnerTex.wrapT =
+/* =========================================================
+   COZY HALLWAY RUNNER
+========================================================= */
+
+const runnerTex=runnerTexture();
+
+runnerTex.wrapS=
+  runnerTex.wrapT=
   THREE.RepeatWrapping;
 
 runnerTex.repeat.set(
   1,
-  7
+  14
 );
 
-const runner =
+const runner=
   new THREE.Mesh(
     new THREE.PlaneGeometry(
-      1.55,
+      1.62,
       HALL_LENGTH-3
     ),
     new THREE.MeshStandardMaterial({
@@ -1607,336 +1511,80 @@ const runner =
     })
   );
 
-runner.rotation.x =
-  -Math.PI/2;
+runner.rotation.x=-Math.PI/2;
 
 runner.position.set(
   0,
-  .012,
+  .014,
   HALL_LENGTH/2
 );
+
+runner.receiveShadow=true;
 
 scene.add(runner);
 
 
-/* ============================================================
-   HALL CEILING
-============================================================ */
+/* =========================================================
+   HALLWAY SCONCES
+========================================================= */
 
-box(
-  scene,
-  HALL_HALF*2,
-  .16,
-  HALL_LENGTH,
-  0x180e10,
-  0,
-  4.8,
-  HALL_LENGTH/2
-);
+function wallSconce(z,side){
 
+  const x=
+    side*(HALL_HALF-.11);
 
-/* old beams */
-
-for(
-  let z=5;
-  z<HALL_LENGTH;
-  z+=9
-){
+  const brass=0x74563d;
 
   box(
     scene,
-    HALL_HALF*2+.12,
-    .18,
-    .28,
-    0x2d1815,
-    0,
-    4.61,
+    .10,
+    .35,
+    .15,
+    brass,
+    x,
+    2.85,
     z
   );
-}
 
-
-/* ============================================================
-   HALL WALLS
-============================================================ */
-
-function buildHallWall(side){
-
-  const x =
-    side*HALL_HALF;
-
-  let start=1;
-
-  for(
-    const zc of lobbyCenters
-  ){
-
-    const gapStart =
-      zc-DOOR_HALF-.2;
-
-    if(
-      gapStart>start
-    ){
-
-      box(
-        scene,
-        .18,
-        ROOM_H,
-        gapStart-start,
-        0x47171c,
-        x,
-        ROOM_H/2,
-        (start+gapStart)/2
-      );
-    }
-
-    start =
-      zc+DOOR_HALF+.2;
-  }
-
-  if(start<HALL_LENGTH){
-
-    box(
-      scene,
-      .18,
-      ROOM_H,
-      HALL_LENGTH-start,
-      0x47171c,
-      x,
-      ROOM_H/2,
-      (start+HALL_LENGTH)/2
-    );
-  }
-
-
-  /* wallpaper */
-
-  const tex =
-    wallpaperTexture();
-
-  tex.wrapS =
-  tex.wrapT =
-    THREE.RepeatWrapping;
-
-  tex.repeat.set(
-    1.4,
-    3
-  );
-
-  let pStart=1;
-
-  for(
-    const zc of lobbyCenters
-  ){
-
-    const gapStart =
-      zc-DOOR_HALF-.2;
-
-    if(gapStart>pStart){
-
-      const panel =
-        new THREE.Mesh(
-          new THREE.PlaneGeometry(
-            ROOM_H-.3,
-            gapStart-pStart
-          ),
-          new THREE.MeshStandardMaterial({
-            map:tex,
-            roughness:1
-          })
-        );
-
-      panel.rotation.y =
-        side<0
-          ? Math.PI/2
-          : -Math.PI/2;
-
-      panel.position.set(
-        x-side*.096,
-        ROOM_H/2,
-        (pStart+gapStart)/2
-      );
-
-      scene.add(panel);
-    }
-
-    pStart =
-      zc+DOOR_HALF+.2;
-  }
-
-  if(pStart<HALL_LENGTH){
-
-    const panel =
-      new THREE.Mesh(
-        new THREE.PlaneGeometry(
-          ROOM_H-.3,
-          HALL_LENGTH-pStart
-        ),
-        new THREE.MeshStandardMaterial({
-          map:tex,
-          roughness:1
-        })
-      );
-
-    panel.rotation.y =
-      side<0
-        ? Math.PI/2
-        : -Math.PI/2;
-
-    panel.position.set(
-      x-side*.096,
-      ROOM_H/2,
-      (pStart+HALL_LENGTH)/2
-    );
-
-    scene.add(panel);
-  }
-}
-
-buildHallWall(-1);
-buildHallWall(1);
-
-
-/* ============================================================
-   HALL WAINSCOTING
-============================================================ */
-
-for(
-  const side of [-1,1]
-){
-
-  const x =
-    side*(HALL_HALF-.1);
-
-  box(
+  cylinder(
     scene,
-    .22,
-    1.04,
-    HALL_LENGTH,
-    0x2e1713,
-    x,
-    .62,
-    HALL_LENGTH/2
-  );
-
-  box(
-    scene,
-    .24,
-    .09,
-    HALL_LENGTH,
-    0x704333,
-    x,
-    1.13,
-    HALL_LENGTH/2
-  );
-
-  box(
-    scene,
-    .24,
-    .13,
-    HALL_LENGTH,
-    0x21100e,
-    x,
-    .12,
-    HALL_LENGTH/2
-  );
-}
-
-
-/* ============================================================
-   HALL LIGHTS
-============================================================ */
-
-function hallwaySconce(
-  side,
-  z
-){
-
-  const x =
-    side*(HALL_HALF-.13);
-
-  cyl(
-    scene,
-    .14,
-    .14,
-    .09,
-    0x765137,
-    x,
+    .06,
+    .08,
+    .18,
+    brass,
+    x-side*.08,
     2.72,
     z,
     14,
-    Math.PI/2,
-    {
-      metalness:.55,
-      roughness:.38
-    }
+    0,
+    0,
+    Math.PI/2
   );
-
-  tubeBetween(
-    scene,
-    new THREE.Vector3(
-      x,
-      2.72,
-      z
-    ),
-    new THREE.Vector3(
-      x-side*.18,
-      2.78,
-      z
-    ),
-    .035,
-    0x765137
-  );
-
-  const shade =
-    new THREE.Mesh(
-      new THREE.ConeGeometry(
-        .27,
-        .34,
-        16,
-        1,
-        true
-      ),
-      M(
-        0xb07a54,
-        {
-          roughness:.8
-        }
-      )
-    );
-
-  shade.position.set(
-    x-side*.21,
-    2.62,
-    z
-  );
-
-  scene.add(shade);
 
   sphere(
     scene,
-    .11,
-    0xffc37b,
-    x-side*.21,
-    2.55,
+    .12,
+    0xffd29a,
+    x-side*.17,
+    2.65,
     z,
-    [1,1,1],
+    [1,.8,1],
     {
-      emissive:0xff9f48,
-      emissiveIntensity:2.1
+      emissive:0xffad67,
+      emissiveIntensity:1.7
     }
   );
 
-  const light =
+  const light=
     new THREE.PointLight(
-      0xffb56e,
-      .78,
+      0xffc27f,
+      .55,
       7
     );
 
   light.position.set(
-    x-side*.21,
-    2.57,
+    x-side*.22,
+    2.65,
     z
   );
 
@@ -1944,46 +1592,50 @@ function hallwaySconce(
 
   flickerLights.push({
     light,
-    base:.78,
-    mode:'soft'
+    base:.55,
+    mode:"lamp"
   });
 }
 
-for(
-  let z=7;
-  z<HALL_LENGTH;
-  z+=7
-){
+for(let z=7;z<129;z+=7){
 
-  hallwaySconce(
-    z%14===0 ? -1 : 1,
-    z
+  wallSconce(
+    z,
+    z%14===0 ? -1 : 1
   );
 }
 
 
-/* ============================================================
-   HALL PICTURES
-============================================================ */
+/* =========================================================
+   HALLWAY FRAMED ART
+   FILLS THE OPPOSITE WALLS
+========================================================= */
 
 function hallwayFrame(
   side,
   z,
-  hue
+  hue,
+  large=false
 ){
 
-  const x =
-    side*(HALL_HALF-.12);
+  const x=
+    side*(HALL_HALF-.13);
 
-  const art =
+  const w=
+    large ? .82 : .62;
+
+  const h=
+    large ? 1.12 : .88;
+
+  const art=
     new THREE.Mesh(
       new THREE.PlaneGeometry(
-        .55,
-        .72
+        w,
+        h
       ),
       new THREE.MeshStandardMaterial({
-        map:placeholderArt(
-          '',
+        map:paintingTexture(
+          "",
           hue
         ),
         roughness:.9
@@ -1992,23 +1644,26 @@ function hallwayFrame(
 
   art.position.set(
     x,
-    2.15,
+    large?2.18:2.12,
     z
   );
 
-  art.rotation.y =
+  art.rotation.y=
     side<0
-      ? Math.PI/2
-      : -Math.PI/2;
+    ?Math.PI/2
+    :-Math.PI/2;
 
-  const frame =
+  const frame=
     new THREE.Mesh(
       new THREE.BoxGeometry(
-        .7,
-        .87,
-        .07
+        w+.12,
+        h+.12,
+        .065
       ),
-      M(0x21110d)
+      material(
+        0x2a1814,
+        {roughness:.45}
+      )
     );
 
   frame.position.copy(
@@ -2027,286 +1682,347 @@ function hallwayFrame(
   );
 }
 
-for(
-  let z=11;
-  z<130;
-  z+=15
-){
+for(let i=0;i<lobbyCenters.length;i++){
+
+  const roomSide=
+    i%2===0 ? -1 : 1;
+
+  const opposite=
+    -roomSide;
+
+  /*
+    Large artwork directly opposite
+    every room entrance.
+  */
 
   hallwayFrame(
-    z%30===0 ? -1 : 1,
-    z,
-    15+z%50
+    opposite,
+    lobbyCenters[i],
+    190+i*25,
+    true
+  );
+
+  /*
+    Smaller pieces between rooms.
+  */
+
+  hallwayFrame(
+    roomSide,
+    lobbyCenters[i]-5.1,
+    25+i*30,
+    false
+  );
+
+  hallwayFrame(
+    opposite,
+    lobbyCenters[i]+5.1,
+    100+i*20,
+    false
   );
 }
 
 
-/* ============================================================
-   DOORWAY
-============================================================ */
+/* =========================================================
+   ROOM DOOR
+   THIS IS THE IMPORTANT REBUILT PART
+========================================================= */
 
-/*
-   IMPORTANT:
-
-   The doorway is constructed in WORLD SPACE.
-
-   Left room:
-     x = -1.4 hallway boundary
-     room lies to the LEFT
-     door opens into negative X
-
-   Right room:
-     x = +1.4 hallway boundary
-     room lies to the RIGHT
-     door opens into positive X
-
-   There is a real wall opening.
-*/
-
-function makeDoorway(
-  side,
-  z,
-  number,
-  color
-){
-
-  const wallX =
-    side*HALL_HALF;
-
-  const frameMat =
-    M(
-      0x2a1511,
-      {
-        roughness:.5
-      }
-    );
-
-
-  /* door frame jambs */
-
-  box(
-    scene,
-    .22,
-    3.65,
-    .18,
-    0x2a1511,
-    wallX,
-    1.82,
-    z-DOOR_HALF
-  );
-
-  box(
-    scene,
-    .22,
-    3.65,
-    .18,
-    0x2a1511,
-    wallX,
-    1.82,
-    z+DOOR_HALF
-  );
-
-
-  /* top frame */
-
-  box(
-    scene,
-    .22,
-    .22,
-    DOOR_HALF*2+.18,
-    0x2a1511,
-    wallX,
-    3.65,
-    z
-  );
-
+function createDoorway(group,cfg){
 
   /*
-     ACTUAL DOOR.
-
-     It is positioned just inside the room,
-     not in the hallway.
+    hallway-facing wall in LOCAL room coordinates
   */
 
-  const doorGroup =
-    new THREE.Group();
+  const wallX=
+    -cfg.side*(ROOM_W/2);
 
-  doorGroup.position.set(
-    wallX+side*.06,
-    0,
-    z+.82
-  );
+  const doorWidth=
+    DOOR_HALF*2-.12;
 
-  scene.add(
-    doorGroup
-  );
+  const frameColor=0x38241b;
+  const doorColor=0x302019;
 
-
-  /* hinge-side origin */
-
-  const door =
-    box(
-      doorGroup,
-      .12,
-      3.18,
-      2.05,
-      0x4b241b,
-      side*.95,
-      1.59,
-      0,
-      side*.03,
-      {
-        roughness:.66
-      }
-    );
-
-
-  /* decorative panels */
+  /*
+    The black recess is behind the actual door.
+    This makes the opening visually unmistakable.
+  */
 
   box(
-    doorGroup,
-    .035,
-    1.05,
-    .68,
-    0x321611,
-    side*.89,
-    2.3,
+    group,
+    .10,
+    3.55,
+    doorWidth+.12,
+    0x050507,
+    wallX+cfg.side*.045,
+    1.78,
+    0
+  );
+
+  /*
+    Door itself.
+    Thin X dimension, wide Z dimension.
+    Therefore it sits IN the side wall.
+  */
+
+  const doorX=
+    wallX+cfg.side*.15;
+
+  box(
+    group,
+    .20,
+    3.28,
+    doorWidth,
+    doorColor,
+    doorX,
+    1.64,
+    0
+  );
+
+  /*
+    Door inset panels.
+  */
+
+  const faceX=
+    doorX-cfg.side*.112;
+
+  box(
+    group,
+    .025,
+    .98,
+    1.22,
+    0x21140f,
+    faceX,
+    2.18,
     0
   );
 
   box(
-    doorGroup,
-    .035,
+    group,
+    .025,
     .72,
-    .68,
-    0x321611,
-    side*.89,
-    1.15,
+    1.22,
+    0x21140f,
+    faceX,
+    1.05,
     0
   );
 
+  /*
+    Vertical center rail.
+  */
 
-  /* brass handle */
+  box(
+    group,
+    .035,
+    2.72,
+    .065,
+    0x533326,
+    faceX-cfg.side*.018,
+    1.62,
+    0
+  );
+
+  /*
+    Door frame posts.
+  */
+
+  box(
+    group,
+    .27,
+    3.72,
+    .22,
+    frameColor,
+    wallX,
+    1.86,
+    -DOOR_HALF
+  );
+
+  box(
+    group,
+    .27,
+    3.72,
+    .22,
+    frameColor,
+    wallX,
+    1.86,
+    DOOR_HALF
+  );
+
+  /*
+    Heavy lintel.
+  */
+
+  box(
+    group,
+    .28,
+    .24,
+    doorWidth+.5,
+    frameColor,
+    wallX,
+    3.72,
+    0
+  );
+
+  /*
+    Brass knob.
+  */
 
   sphere(
-    doorGroup,
+    group,
     .075,
-    0xc39150,
-    side*.9,
-    1.57,
-    -.72,
+    0xc79b58,
+    faceX-cfg.side*.04,
+    1.62,
+    .86,
     [1,1,1],
     {
-      metalness:.8,
+      metalness:.75,
       roughness:.25
     }
   );
 
+  /*
+    Tiny keyhole below knob.
+  */
 
-  /* slight opening angle */
+  sphere(
+    group,
+    .018,
+    0x090807,
+    faceX-cfg.side*.045,
+    1.48,
+    .86
+  );
 
-  doorGroup.rotation.y =
-    side*.14;
-
-
-  animatedObjects.push({
-    type:'door',
-    object:doorGroup,
-    base:doorGroup.rotation.y
-  });
-
-
-  /* threshold */
+  /*
+    Threshold — only across the actual doorway,
+    NOT across the hallway.
+  */
 
   box(
-    scene,
-    .35,
-    .08,
-    DOOR_HALF*2,
-    0x63402d,
-    wallX+side*.12,
-    .045,
-    z
+    group,
+    .38,
+    .07,
+    doorWidth+.18,
+    0x76513b,
+    wallX+cfg.side*.18,
+    .035,
+    0
   );
 
+  /*
+    Lobby plaque/sign physically attached
+    to the doorway.
+  */
 
-  /* warm entry glow */
+  const signCanvas=
+    document.createElement("canvas");
 
-  const entryLight =
-    new THREE.PointLight(
-      number===5
-        ? 0x79262c
-        : 0xffb16e,
-      number===5
-        ? .4
-        : .62,
-      5
+  signCanvas.width=700;
+  signCanvas.height=180;
+
+  const ctx=
+    signCanvas.getContext("2d");
+
+  ctx.fillStyle="#101820";
+  ctx.fillRect(0,0,700,180);
+
+  ctx.strokeStyle=cfg.neon;
+  ctx.lineWidth=8;
+  ctx.strokeRect(
+    13,
+    13,
+    674,
+    154
+  );
+
+  ctx.shadowColor=cfg.neon;
+  ctx.shadowBlur=24;
+
+  ctx.fillStyle=cfg.neon;
+  ctx.font="bold 58px Georgia";
+  ctx.textAlign="center";
+  ctx.textBaseline="middle";
+
+  ctx.fillText(
+    "LOBBY "+cfg.number,
+    350,
+    92
+  );
+
+  const signTex=
+    new THREE.CanvasTexture(
+      signCanvas
     );
 
-  entryLight.position.set(
-    wallX+side*.75,
-    2.35,
-    z
-  );
+  signTex.encoding=
+    THREE.sRGBEncoding;
 
-  scene.add(
-    entryLight
-  );
-
-
-  /* sign mounted ABOVE actual doorway */
-
-  const sign =
+  const sign=
     new THREE.Mesh(
       new THREE.PlaneGeometry(
-        1.7,
-        .4
+        1.85,
+        .47
       ),
       new THREE.MeshStandardMaterial({
-        map:signTexture(
-          `LOBBY ${number}`,
-          color
-        ),
-        roughness:.68,
-        emissive:
-          number===5
-            ? 0x180000
-            : 0x081016,
-        emissiveIntensity:.3
+        map:signTex,
+        emissive:cfg.neon,
+        emissiveIntensity:.18,
+        roughness:.65
       })
     );
 
   sign.position.set(
-    wallX+side*.015,
-    4.0,
-    z
+    wallX-cfg.side*.04,
+    4.08,
+    0
   );
 
+  sign.rotation.y=
+    cfg.side<0
+    ?-Math.PI/2
+    :Math.PI/2;
+
+  group.add(sign);
+
   /*
-     Plane faces toward hallway.
+    Warm light over every door.
   */
 
-  sign.rotation.y =
-    side<0
-      ? -Math.PI/2
-      : Math.PI/2;
+  const doorLight=
+    new THREE.PointLight(
+      cfg.neon,
+      .16,
+      3.8
+    );
 
-  scene.add(sign);
+  doorLight.position.set(
+    wallX-cfg.side*.22,
+    3.7,
+    0
+  );
+
+  group.add(doorLight);
 }
 
 
-/* ============================================================
-   ROOM CREATOR
-============================================================ */
+/* =========================================================
+   ROOM SHELL
+========================================================= */
 
 function createRoom(cfg){
 
-  const group =
+  const group=
     new THREE.Group();
 
+  /*
+    THIS position is the actual room position.
+    Left rooms extend left.
+    Right rooms extend right.
+  */
+
   group.position.set(
-    cfg.side*
-      (HALL_HALF+ROOM_W/2),
+    cfg.side*(HALL_HALF+ROOM_W/2),
     0,
     cfg.z
   );
@@ -2315,3551 +2031,2737 @@ function createRoom(cfg){
 
   rooms.push({
     z:cfg.z,
-    tag:`LOBBY ${cfg.number}`,
     side:cfg.side,
+    tag:"LOBBY "+cfg.number,
     group
   });
 
-
-  /* floor */
-
-  const floor =
-    new THREE.Mesh(
-      new THREE.PlaneGeometry(
-        ROOM_W,
-        ROOM_D
-      ),
-      M(
-        cfg.floor,
-        {
-          roughness:.94
-        }
-      )
-    );
-
-  floor.rotation.x =
-    -Math.PI/2;
-
-  floor.position.y=.01;
-
-  floor.receiveShadow=true;
-
-  group.add(floor);
-
-
-  /* ceiling */
+  /*
+    Floor
+  */
 
   box(
     group,
     ROOM_W,
-    .16,
+    .10,
     ROOM_D,
-    cfg.ceiling,
+    cfg.floor,
     0,
-    ROOM_H,
-    0
+    -.05,
+    0,
+    0,
+    {roughness:.95}
   );
 
+  /*
+    OUTER WALL
+  */
 
-  /* outer wall */
+  const outerX=
+    cfg.side*(ROOM_W/2);
 
   box(
     group,
-    .18,
+    .20,
     ROOM_H,
     ROOM_D,
     cfg.wall,
-    cfg.side*ROOM_W/2,
+    outerX,
     ROOM_H/2,
     0
   );
 
-
-  /* rear end wall */
-
-  box(
-    group,
-    ROOM_W,
-    ROOM_H,
-    .18,
-    cfg.wall,
-    0,
-    ROOM_H/2,
-    -ROOM_D/2
-  );
-
-  /* front end wall */
+  /*
+    BACK WALL
+  */
 
   box(
     group,
     ROOM_W,
     ROOM_H,
-    .18,
+    .20,
     cfg.wall,
     0,
     ROOM_H/2,
     ROOM_D/2
   );
 
-
   /*
-     HALLWAY-FACING WALL.
-
-     THIS IS THE SECOND CRITICAL FIX.
-
-     The wall is split into two pieces,
-     leaving an actual opening for the door.
-
-     Local room coordinates:
-
-       LEFT ROOM:
-         hall wall = +7.5
-
-       RIGHT ROOM:
-         hall wall = -7.5
+    FRONT WALL — segmented around the door opening.
+    This is what makes the door a genuine opening.
   */
 
-  const hallWallX =
-    -cfg.side*ROOM_W/2;
+  const hallX=
+    -cfg.side*(ROOM_W/2);
 
-  const segmentLength =
-    ROOM_D/2-DOOR_HALF;
+  const edge=
+    DOOR_HALF+.12;
 
-
-  /* first wall section */
-
-  box(
-    group,
-    .18,
-    ROOM_H,
-    segmentLength,
-    cfg.wall,
-    hallWallX,
-    ROOM_H/2,
-    -(
-      ROOM_D/4+
-      DOOR_HALF/2
-    )
-  );
-
-
-  /* second wall section */
+  const segmentLength=
+    ROOM_D/2-edge;
 
   box(
     group,
-    .18,
+    .20,
     ROOM_H,
     segmentLength,
     cfg.wall,
-    hallWallX,
+    hallX,
     ROOM_H/2,
-    (
-      ROOM_D/4+
-      DOOR_HALF/2
-    )
+    -(ROOM_D/2+edge)/2
   );
 
+  box(
+    group,
+    .20,
+    ROOM_H,
+    segmentLength,
+    cfg.wall,
+    hallX,
+    ROOM_H/2,
+    +(ROOM_D/2+edge)/2
+  );
 
-  /* wallpaper on outer walls */
+  /*
+    Ceiling
+  */
 
-  if(cfg.wallpaper){
+  box(
+    group,
+    ROOM_W,
+    .15,
+    ROOM_D,
+    cfg.ceiling||0x171315,
+    0,
+    ROOM_H,
+    0
+  );
 
-    const tex =
-      wallpaperTexture();
+  /*
+    Inner wallpaper on side/back walls.
+  */
 
-    tex.wrapS =
-    tex.wrapT =
+  if(cfg.wallpaper!==false){
+
+    const tex=wallpaperTexture();
+
+    tex.wrapS=
+      tex.wrapT=
       THREE.RepeatWrapping;
 
     tex.repeat.set(
-      2,
+      2.2,
       3
     );
 
-    const mat =
+    const wallMat=
       new THREE.MeshStandardMaterial({
         map:tex,
         roughness:1
       });
 
+    /*
+      outer wall interior
+    */
 
-    /* hallway-facing split wallpaper */
-
-    for(
-      const s of [-1,1]
-    ){
-
-      const panel =
-        new THREE.Mesh(
-          new THREE.PlaneGeometry(
-            ROOM_H-.3,
-            segmentLength
-          ),
-          mat
-        );
-
-      panel.position.set(
-        hallWallX+
-          cfg.side*.095,
-        ROOM_H/2,
-        s*
-          (
-            ROOM_D/4+
-            DOOR_HALF/2
-          )
+    const outerPanel=
+      new THREE.Mesh(
+        new THREE.PlaneGeometry(
+          ROOM_H-.35,
+          ROOM_D-.25
+        ),
+        wallMat
       );
 
-      panel.rotation.y =
-        cfg.side<0
-          ? -Math.PI/2
-          : Math.PI/2;
+    outerPanel.position.set(
+      outerX-cfg.side*.11,
+      ROOM_H/2,
+      0
+    );
 
-      group.add(panel);
-    }
+    outerPanel.rotation.y=
+      cfg.side<0
+      ?Math.PI/2
+      :-Math.PI/2;
+
+    group.add(outerPanel);
+
+    /*
+      back wall
+    */
+
+    const backPanel=
+      new THREE.Mesh(
+        new THREE.PlaneGeometry(
+          ROOM_W-.25,
+          ROOM_H-.35
+        ),
+        wallMat
+      );
+
+    backPanel.position.set(
+      0,
+      ROOM_H/2,
+      ROOM_D/2-.11
+    );
+
+    backPanel.rotation.y=Math.PI;
+
+    group.add(backPanel);
+
   }
 
-
-  /* room light */
-
-  const roomLight =
-    new THREE.PointLight(
-      cfg.light,
-      cfg.intensity,
-      25
-    );
-
-  roomLight.position.set(
-    cfg.side*2,
-    3.5,
-    0
-  );
-
-  roomLight.castShadow=true;
-
-  roomLight.shadow.mapSize.width=512;
-  roomLight.shadow.mapSize.height=512;
-
-  group.add(roomLight);
-
-  flickerLights.push({
-    light:roomLight,
-    base:cfg.intensity,
-    mode:cfg.flicker||'soft'
-  });
-
-
-  /* paintings */
-
-  (cfg.paintings||[])
-    .forEach(
-      p =>
-        createPainting(
-          p,
-          group
-        )
-    );
-
-
   /*
-     Actual doorway aligned with
-     actual room wall.
+    Room lighting.
   */
 
-  makeDoorway(
-    cfg.side,
-    cfg.z,
-    cfg.number,
-    cfg.neon
+  const mainLight=
+    new THREE.PointLight(
+      cfg.light||0xffd09b,
+      cfg.intensity||.9,
+      21
+    );
+
+  mainLight.position.set(
+    cfg.side*2,
+    3.55,
+    -1
   );
+
+  mainLight.castShadow=true;
+
+  mainLight.shadow.mapSize.width=512;
+  mainLight.shadow.mapSize.height=512;
+
+  group.add(mainLight);
+
+  flickerLights.push({
+    light:mainLight,
+    base:cfg.intensity||.9,
+    mode:cfg.flicker||"soft"
+  });
+
+  /*
+    Actual door.
+  */
+
+  createDoorway(group,cfg);
 
   return group;
 }
 
 
-/* ============================================================
-   LOBBY 1 — ABANDONED CINEMA
-============================================================ */
+/* =========================================================
+   ROOM PROP HELPERS
+========================================================= */
 
-const lobby1Paintings=[];
+function rug(
+  group,
+  x,z,
+  w,d,
+  color
+){
 
-for(let i=0;i<50;i++){
-
-  let x,z,ry;
-
-  if(i<13){
-
-    x=-6.0+i*1.0;
-    z=11.05;
-    ry=Math.PI;
-
-  }else if(i<25){
-
-    x=6.35;
-    z=9.6-(i-13)*1.65;
-    ry=-Math.PI/2;
-
-  }else if(i<38){
-
-    x=-6.0+(i-25)*1.0;
-    z=-11.05;
-    ry=0;
-
-  }else{
-
-    x=-6.35;
-    z=9.6-(i-38)*1.65;
-    ry=Math.PI/2;
-  }
-
-  lobby1Paintings.push({
-
+  box(
+    group,
+    w,
+    .035,
+    d,
+    color,
     x,
-    y:1.72,
-    z,
-    ry,
+    .025,
+    z
+  );
 
-    label:
-      i===0
-        ? 'A Quiet December'
-        : `Cinema Painting ${i+1}`,
-
-    hue:
-      190+(i%35),
-
-    story:
-      'A painting waiting quietly inside the old cinema.'
-  });
+  box(
+    group,
+    w-.18,
+    .042,
+    d-.18,
+    0x38232a,
+    x,
+    .045,
+    z
+  );
 }
 
-createRoom({
+function table(
+  group,
+  x,z,
+  w,d,
+  height,
+  color=0x352018
+){
 
+  box(
+    group,
+    w,
+    .13,
+    d,
+    color,
+    x,
+    height,
+    z
+  );
+
+  const legX=w*.38;
+  const legZ=d*.38;
+
+  for(const xx of [-legX,legX]){
+
+    for(const zz of [-legZ,legZ]){
+
+      cylinder(
+        group,
+        .045,
+        .055,
+        height,
+        color,
+        x+xx,
+        height/2,
+        z+zz,
+        10
+      );
+    }
+  }
+}
+
+function windowFrame(
+  group,
+  x,y,z,
+  width,height,
+  rotationY,
+  blue=false
+){
+
+  const glass=
+    box(
+      group,
+      .055,
+      height,
+      width,
+      blue
+      ?0x14283a
+      :0x1b2730,
+      x,y,z,
+      rotationY,
+      {
+        emissive:
+          blue
+          ?0x173b5b
+          :0x071017,
+        emissiveIntensity:
+          blue?.45:.12,
+        roughness:.4
+      }
+    );
+
+  /*
+    Vertical mullions.
+  */
+
+  const sideOffset=
+    width*.25;
+
+  for(const zz of [-sideOffset,sideOffset]){
+
+    box(
+      group,
+      .09,
+      height+.16,
+      .08,
+      0x4c352b,
+      x,
+      y,
+      z+zz
+    );
+  }
+
+  box(
+    group,
+    .10,
+    height+.16,
+    .08,
+    0x4c352b,
+    x,
+    y,
+    z
+  );
+
+  box(
+    group,
+    .10,
+    .08,
+    width+.16,
+    0x4c352b,
+    x,
+    y+height/2,
+    z,
+    rotationY
+  );
+
+  box(
+    group,
+    .10,
+    .08,
+    width+.16,
+    0x4c352b,
+    x,
+    y-height/2,
+    z,
+    rotationY
+  );
+
+  return glass;
+}
+
+
+/* =========================================================
+   LOBBY 1 — OLD CINEMA
+========================================================= */
+
+const lobby1={
   number:1,
   side:-1,
   z:18,
+  wall:0x35272a,
+  floor:0x251719,
+  ceiling:0x130f12,
+  light:0xffc08c,
+  intensity:.82,
+  flicker:"lamp",
+  neon:0x73d9ff
+};
 
-  wall:0x3e171b,
-  floor:0x211314,
-  ceiling:0x140a0c,
+const room1=createRoom(lobby1);
 
-  wallpaper:true,
+room1.userData.theme="cinema";
 
-  light:0xff9e5c,
-  intensity:1.5,
+/*
+  Screen on outer wall.
+*/
 
-  neon:'#ffb978',
-  flicker:'flicker',
-
-  paintings:lobby1Paintings
-});
-
-const L1 =
-  rooms[0].group;
-
-
-/* cinematic screen */
-
-box(
-  L1,
-  6.8,
-  3.9,
-  .25,
-  0x281719,
-  0,
-  2.5,
-  -8.9
-);
-
-const screenTex =
-  canvasTexture(
-    (ctx,w,h)=>{
-
-      const g =
-        ctx.createLinearGradient(
-          0,0,w,0
-        );
-
-      g.addColorStop(
-        0,
-        '#111b20'
-      );
-
-      g.addColorStop(
-        .5,
-        '#586361'
-      );
-
-      g.addColorStop(
-        1,
-        '#151b1e'
-      );
-
-      ctx.fillStyle=g;
-
-      ctx.fillRect(
-        0,0,w,h
-      );
-
-      ctx.fillStyle =
-        'rgba(255,222,175,.13)';
-
-      ctx.fillRect(
-        w*.05,
-        h*.12,
-        w*.9,
-        h*.72
-      );
-
-      ctx.fillStyle =
-        'rgba(255,255,255,.55)';
-
-      ctx.font =
-        '28px Georgia';
-
-      ctx.textAlign =
-        'center';
-
-      ctx.fillText(
-        'THE LAST SCREENING',
-        w/2,
-        h*.9
-      );
-    },
-    640,
-    360
-  );
-
-const screen =
+const screen=
   new THREE.Mesh(
     new THREE.PlaneGeometry(
-      6.35,
-      3.25
+      5.6,
+      2.65
     ),
     new THREE.MeshStandardMaterial({
-      map:screenTex,
-      roughness:.82,
-      emissive:0x211b17,
-      emissiveIntensity:.3
+      color:0x050609,
+      emissive:0x101d28,
+      emissiveIntensity:.35,
+      roughness:.95
     })
   );
 
 screen.position.set(
-  0,
-  2.5,
-  -8.75
-);
-
-L1.add(screen);
-
-
-/* curtains */
-
-function cinemaCurtain(x){
-
-  const curtain =
-    new THREE.Mesh(
-      new THREE.CylinderGeometry(
-        .43,
-        .7,
-        4.1,
-        18
-      ),
-      M(
-        0x5b171f,
-        {
-          roughness:.98
-        }
-      )
-    );
-
-  curtain.position.set(
-    x,
-    2.25,
-    -8.68
-  );
-
-  curtain.scale.z=.55;
-
-  L1.add(curtain);
-}
-
-cinemaCurtain(-3.35);
-cinemaCurtain(3.35);
-
-
-/* projector */
-
-box(
-  L1,
-  1.05,
-  .58,
-  .72,
-  0x211c19,
-  0,
-  1.0,
-  -5.8
-);
-
-cyl(
-  L1,
-  .22,
-  .22,
-  .3,
-  0x70563e,
-  0,
-  1.34,
-  -6.08,
-  16,
-  Math.PI/2,
-  {
-    metalness:.5
-  }
-);
-
-sphere(
-  L1,
-  .12,
-  0xffd7a0,
-  0,
-  1.34,
-  -6.25,
-  [1,1,1],
-  {
-    emissive:0xffa34e,
-    emissiveIntensity:3
-  }
-);
-
-
-/* projector beam */
-
-const beam =
-  new THREE.Mesh(
-    new THREE.ConeGeometry(
-      2.75,
-      6.2,
-      18,
-      1,
-      true
-    ),
-    M(
-      0xffd4a0,
-      {
-        transparent:true,
-        opacity:.025,
-        side:THREE.DoubleSide,
-        emissive:0xffa15c,
-        emissiveIntensity:.5
-      }
-    )
-  );
-
-beam.rotation.x =
-  Math.PI/2;
-
-beam.position.set(
-  0,
-  2,
-  -2.7
-);
-
-L1.add(beam);
-
-animatedObjects.push({
-  type:'beam',
-  object:beam
-});
-
-
-/* cinema seats */
-
-function cinemaSeat(
-  x,z
-){
-
-  const g =
-    new THREE.Group();
-
-  g.position.set(
-    x,
-    .05,
-    z
-  );
-
-  L1.add(g);
-
-  sphere(
-    g,
-    .48,
-    0x57232a,
-    0,
-    .72,
-    0,
-    [1,.7,.8]
-  );
-
-  sphere(
-    g,
-    .38,
-    0x682a32,
-    0,
-    1.12,
-    -.18,
-    [1,.85,.6]
-  );
-
-  for(
-    const sx of [-.46,.46]
-  ){
-
-    sphere(
-      g,
-      .17,
-      0x452024,
-      sx,
-      .68,
-      0,
-      [1,.9,1]
-    );
-  }
-
-  for(
-    const sx of [-.4,.4]
-  ){
-
-    cyl(
-      g,
-      .045,
-      .055,
-      .55,
-      0x3b2a23,
-      sx,
-      .3,
-      0,
-      10
-    );
-  }
-}
-
-for(
-  let row=0;
-  row<3;
-  row++
-){
-
-  for(
-    let col=0;
-    col<5;
-    col++
-  ){
-
-    cinemaSeat(
-      -3.8+col*1.9,
-      1.1+row*2
-    );
-  }
-}
-
-
-/* ticket booth */
-
-box(
-  L1,
-  2.5,
-  1.5,
-  1.0,
-  0x4b2a20,
-  -4.5,
-  .75,
-  -3.6
-);
-
-box(
-  L1,
-  2.05,
-  .65,
-  .08,
-  0x101417,
-  -4.5,
-  1.7,
-  -3.05
-);
-
-box(
-  L1,
-  1.0,
-  .05,
-  .5,
-  0xd1a875,
-  -4.5,
-  1.42,
-  -3.0
-);
-
-
-/* popcorn */
-
-box(
-  L1,
-  1.1,
-  1.3,
-  .85,
-  0x8b292a,
-  4.7,
-  .75,
-  -3.5
-);
-
-box(
-  L1,
-  .9,
-  .72,
-  .7,
-  0x202022,
-  4.7,
-  1.72,
-  -3.5
-);
-
-for(let i=0;i<12;i++){
-
-  sphere(
-    L1,
-    .085,
-    0xffdfa0,
-    4.34+(i%6)*.14,
-    2.07+Math.floor(i/6)*.08,
-    -3.7+(i%2)*.13
-  );
-}
-
-
-/* reels */
-
-for(let i=0;i<2;i++){
-
-  torus(
-    L1,
-    .42,
-    .065,
-    0x927552,
-    3.0+i*.9,
-    1.1,
-    -6.4,
-    Math.PI/2,
-    0,
-    0,
-    {
-      metalness:.6
-    }
-  );
-}
-
-
-/* ============================================================
-   LOBBY 2 — SNOWY RURAL COTTAGE
-============================================================ */
-
-const lobby2Paintings=[];
-
-for(let i=0;i<24;i++){
-
-  let x,z,ry;
-
-  if(i<7){
-
-    x=-5.8+i*1.85;
-    z=11.05;
-    ry=Math.PI;
-
-  }else if(i<13){
-
-    x=6.35;
-    z=8.3-(i-7)*2.9;
-    ry=-Math.PI/2;
-
-  }else if(i<20){
-
-    x=-5.8+(i-13)*1.85;
-    z=-11.05;
-    ry=0;
-
-  }else{
-
-    x=-6.35;
-    z=8.3-(i-20)*2.9;
-    ry=Math.PI/2;
-  }
-
-  lobby2Paintings.push({
-
-    x,
-    y:1.72,
-    z,
-    ry,
-
-    label:
-      i===0
-        ? 'Blue December'
-        : `Winter Study ${i+1}`,
-
-    hue:210,
-
-    story:
-      'Cold blue air, a quiet property, and one small warmth behind the glass.'
-  });
-}
-
-createRoom({
-
-  number:2,
-  side:1,
-  z:43,
-
-  wall:0x29363e,
-  floor:0x70797d,
-  ceiling:0x111a20,
-
-  light:0x9cc6e8,
-  intensity:1.25,
-
-  neon:'#b8dcff',
-
-  paintings:lobby2Paintings
-});
-
-const L2 =
-  rooms[1].group;
-
-
-/* cabin body */
-
-box(
-  L2,
-  9.0,
-  3.0,
-  2.0,
-  0x5b402d,
-  0,
-  1.5,
-  -4.5
-);
-
-
-/* logs */
-
-for(
-  let y=.45;
-  y<3.0;
-  y+=.42
-){
-
-  cyl(
-    L2,
-    .16,
-    .16,
-    9.2,
-    0x765239,
-    0,
-    y,
-    -3.48,
-    14,
-    Math.PI/2
-  );
-}
-
-
-/* pitched roof */
-
-const roofLeft =
-  new THREE.Mesh(
-    new THREE.BoxGeometry(
-      5.0,
-      .22,
-      2.8
-    ),
-    M(0x3d4447)
-  );
-
-roofLeft.position.set(
-  -2.1,
-  3.55,
-  -4.4
-);
-
-roofLeft.rotation.z =
-  -.48;
-
-L2.add(roofLeft);
-
-const roofRight =
-  new THREE.Mesh(
-    new THREE.BoxGeometry(
-      5.0,
-      .22,
-      2.8
-    ),
-    M(0x3d4447)
-  );
-
-roofRight.position.set(
-  2.1,
-  3.55,
-  -4.4
-);
-
-roofRight.rotation.z =
-  .48;
-
-L2.add(roofRight);
-
-
-/* snow caps */
-
-box(
-  L2,
-  4.9,
-  .16,
-  2.85,
-  0xdfe7ea,
-  -2.05,
-  3.73,
-  -4.42,
-  -.48
-);
-
-box(
-  L2,
-  4.9,
-  .16,
-  2.85,
-  0xdfe7ea,
-  2.05,
-  3.73,
-  -4.42,
-  .48
-);
-
-
-/* porch */
-
-box(
-  L2,
-  9.5,
-  .2,
-  2.6,
-  0x64442f,
-  0,
-  .14,
-  -6.0
-);
-
-for(
-  let x=-3.8;
-  x<=3.8;
-  x+=1.9
-){
-
-  cyl(
-    L2,
-    .11,
-    .14,
-    2.7,
-    0x553928,
-    x,
-    1.4,
-    -6.75,
-    12
-  );
-}
-
-
-/* door */
-
-box(
-  L2,
-  1.45,
-  2.75,
-  .18,
-  0x48271d,
-  0,
-  1.45,
-  -6.58
-);
-
-box(
-  L2,
-  .95,
-  2.2,
-  .04,
-  0x342018,
-  0,
-  1.45,
-  -6.69
-);
-
-sphere(
-  L2,
-  .07,
-  0xc99b5b,
-  .48,
-  1.45,
-  -6.75,
-  [1,1,1],
-  {
-    metalness:.8
-  }
-);
-
-
-/* warm window */
-
-box(
-  L2,
-  2.25,
-  1.75,
-  .12,
-  0x5a3c29,
-  3.1,
-  2.05,
-  -6.5
-);
-
-const winterWindow =
-  new THREE.Mesh(
-    new THREE.PlaneGeometry(
-      1.95,
-      1.45
-    ),
-    new THREE.MeshStandardMaterial({
-      map:canvasTexture(
-        (ctx,w,h)=>{
-
-          ctx.fillStyle='#263746';
-
-          ctx.fillRect(
-            0,0,w,h
-          );
-
-          ctx.fillStyle =
-            'rgba(255,190,106,.85)';
-
-          ctx.fillRect(
-            32,
-            25,
-            w-64,
-            h-50
-          );
-
-          ctx.strokeStyle='#65442c';
-
-          ctx.lineWidth=16;
-
-          ctx.beginPath();
-
-          ctx.moveTo(
-            w/2,
-            25
-          );
-
-          ctx.lineTo(
-            w/2,
-            h-25
-          );
-
-          ctx.moveTo(
-            32,
-            h/2
-          );
-
-          ctx.lineTo(
-            w-32,
-            h/2
-          );
-
-          ctx.stroke();
-
-        },
-        400,
-        300
-      ),
-      emissive:0xffa34e,
-      emissiveIntensity:.55,
-      roughness:.75
-    })
-  );
-
-winterWindow.position.set(
-  3.1,
-  2.05,
-  -6.58
-);
-
-L2.add(winterWindow);
-
-
-/* chimney */
-
-box(
-  L2,
-  .65,
-  1.5,
-  .65,
-  0x4c4847,
-  -2.8,
-  4.15,
-  -4.2
-);
-
-
-/* woodpile */
-
-for(let i=0;i<10;i++){
-
-  cyl(
-    L2,
-    .14,
-    .14,
-    1.35,
-    0x63452e,
-    -5.0+(i%3)*.23,
-    .23+Math.floor(i/3)*.23,
-    -2.2,
-    12,
-    Math.PI/2
-  );
-}
-
-
-/* trees */
-
-function pineTree(
-  parent,
-  x,z,s=1
-){
-
-  cyl(
-    parent,
-    .13*s,
-    .18*s,
-    2.1*s,
-    0x49382d,
-    x,
-    1.05*s,
-    z,
-    12
-  );
-
-  for(
-    let i=0;
-    i<3;
-    i++
-  ){
-
-    const cone =
-      new THREE.Mesh(
-        new THREE.ConeGeometry(
-          (1.15-i*.2)*s,
-          1.7*s,
-          12
-        ),
-        M(0x26392f)
-      );
-
-    cone.position.set(
-      x,
-      (1.45+i*.62)*s,
-      z
-    );
-
-    parent.add(cone);
-
-    sphere(
-      parent,
-      .16*s,
-      0xe7ecee,
-      x,
-      (2.2+i*.48)*s,
-      z,
-      [1.5,.35,1.5]
-    );
-  }
-}
-
-pineTree(
-  L2,
-  -5.3,
-  5.9,
-  1.3
-);
-
-pineTree(
-  L2,
-  -5,
-  -8,
-  .9
-);
-
-pineTree(
-  L2,
-  5.3,
-  6,
-  1.35
-);
-
-pineTree(
-  L2,
-  5.3,
-  -8,
-  .95
-);
-
-
-/* fence */
-
-for(let i=0;i<7;i++){
-
-  box(
-    L2,
-    .14,
-    1.05,
-    .14,
-    0x59402e,
-    -5.5+i*1.45,
-    .52,
-    8.0
-  );
-}
-
-box(
-  L2,
-  8.5,
-  .14,
-  .14,
-  0x59402e,
-  -1.2,
-  .68,
-  8
-);
-
-
-/* mailbox */
-
-cyl(
-  L2,
-  .28,
-  .28,
-  .8,
-  0x3f5961,
-  5.0,
-  .9,
-  5.4,
-  18
-);
-
-cyl(
-  L2,
-  .05,
-  .05,
-  1.5,
-  0x4d382b,
-  5,
-  .3,
-  5.4,
-  10
-);
-
-
-/* snow */
-
-for(let i=0;i<240;i++){
-
-  const p =
-    new THREE.Mesh(
-      new THREE.SphereGeometry(
-        .025+Math.random()*.035,
-        6,
-        5
-      ),
-      M(
-        0xe7edf0,
-        {
-          transparent:true,
-          opacity:.68
-        }
-      )
-    );
-
-  p.position.set(
-    -7+Math.random()*14,
-    Math.random()*4.7,
-    -11+Math.random()*22
-  );
-
-  L2.add(p);
-
-  snowParticles.push(p);
-}
-
-
-/* ============================================================
-   LOBBY 3 — RAINY COTTAGE
-============================================================ */
-
-const lobby3Paintings=[];
-
-for(let i=0;i<26;i++){
-
-  let x,z,ry;
-
-  if(i<8){
-
-    x=-6+i*1.7;
-    z=11.05;
-    ry=Math.PI;
-
-  }else if(i<14){
-
-    x=6.35;
-    z=8.2-(i-8)*3;
-    ry=-Math.PI/2;
-
-  }else if(i<22){
-
-    x=-6+(i-14)*1.7;
-    z=-11.05;
-    ry=0;
-
-  }else{
-
-    x=-6.35;
-    z=8.2-(i-22)*3;
-    ry=Math.PI/2;
-  }
-
-  lobby3Paintings.push({
-
-    x,
-    y:1.72,
-    z,
-    ry,
-
-    label:
-      i===0
-        ? 'The Orange Hour'
-        : `Rain Study ${i+1}`,
-
-    hue:25,
-
-    story:
-      'Warm interior light against rain-soaked glass — a little pocket of life in the evening.'
-  });
-}
-
-createRoom({
-
-  number:3,
-  side:-1,
-  z:68,
-
-  wall:0x472019,
-  floor:0x2d1e18,
-  ceiling:0x180d0c,
-
-  wallpaper:true,
-
-  light:0xffa365,
-  intensity:1.55,
-
-  neon:'#ffc08b',
-  flicker:'ember',
-
-  paintings:lobby3Paintings
-});
-
-const L3 =
-  rooms[2].group;
-
-
-/* fireplace */
-
-box(
-  L3,
-  3.1,
-  2.8,
-  .8,
-  0x4d413b,
-  -3.9,
-  1.4,
-  -7.9
-);
-
-for(let i=0;i<10;i++){
-
-  sphere(
-    L3,
-    .28,
-    0x625a53,
-    -5.05+(i%3)*.7,
-    .35+Math.floor(i/3)*.42,
-    -7.4,
-    [1.25,.8,.9]
-  );
-}
-
-
-/* logs */
-
-for(let i=0;i<4;i++){
-
-  cyl(
-    L3,
-    .13,
-    .13,
-    1.35,
-    0x4b2f22,
-    -4.25+i*.25,
-    .38,
-    -7.1,
-    12,
-    Math.PI/2
-  );
-}
-
-
-/* fire */
-
-const flame =
-  sphere(
-    L3,
-    .45,
-    0xff6422,
-    -3.9,
-    1.05,
-    -7.18,
-    [.75,1.45,.65],
-    {
-      transparent:true,
-      opacity:.92,
-      emissive:0xff3108,
-      emissiveIntensity:3
-    }
-  );
-
-fireMeshes.push(flame);
-
-const fireLight =
-  new THREE.PointLight(
-    0xff6a2e,
-    1.7,
-    9
-  );
-
-fireLight.position.set(
-  -3.9,
-  1.1,
-  -7.1
-);
-
-L3.add(fireLight);
-
-
-/* mantle */
-
-box(
-  L3,
-  3.5,
-  .24,
-  .85,
-  0x70482f,
-  -3.9,
-  2.95,
-  -7.9
-);
-
-
-/* sofa */
-
-box(
-  L3,
-  4.5,
-  .4,
-  1.35,
-  0x702c2d,
-  2.0,
-  .55,
-  -4.6
-);
-
-sphere(
-  L3,
-  1,
-  0x702c2d,
-  2,
-  1.1,
-  -4.8,
-  [2.2,.72,.7]
-);
-
-sphere(
-  L3,
-  .6,
-  0x702c2d,
-  -.15,
-  1.15,
-  -4.55,
-  [.8,1.15,.8]
-);
-
-sphere(
-  L3,
-  .6,
-  0x702c2d,
-  4.15,
-  1.15,
-  -4.55,
-  [.8,1.15,.8]
-);
-
-
-/* pillows */
-
-sphere(
-  L3,
-  .38,
-  0xb9866e,
-  .8,
-  1.22,
-  -5.1,
-  [1,.7,.55]
-);
-
-sphere(
-  L3,
-  .38,
-  0x8e6a58,
-  3.15,
-  1.22,
-  -5.1,
-  [1,.7,.55]
-);
-
-
-/* rug */
-
-const rug =
-  new THREE.Mesh(
-    new THREE.PlaneGeometry(
-      5.2,
-      3.8
-    ),
-    M(
-      0x522528,
-      {
-        roughness:1
-      }
-    )
-  );
-
-rug.rotation.x =
-  -Math.PI/2;
-
-rug.position.set(
-  .5,
-  .04,
-  -2.5
-);
-
-L3.add(rug);
-
-
-/* coffee table */
-
-cyl(
-  L3,
-  1.0,
-  1.0,
-  .18,
-  0x70472e,
-  2,
-  .78,
-  -1.6,
-  24
-);
-
-for(
-  const a of [0,.5,1,1.5]
-){
-
-  cyl(
-    L3,
-    .06,
-    .06,
-    .72,
-    0x4c3023,
-    2+
-      Math.cos(a)*.62,
-    .4,
-    -1.6+
-      Math.sin(a)*.62,
-    10
-  );
-}
-
-
-/* teacup */
-
-cyl(
-  L3,
-  .2,
-  .24,
-  .15,
-  0xe5d6c1,
-  2,
-  .98,
-  -1.6,
-  16
-);
-
-torus(
-  L3,
-  .12,
-  .03,
-  0xe5d6c1,
-  2.25,
-  .98,
-  -1.6,
-  Math.PI/2
-);
-
-
-/* floor lamp */
-
-cyl(
-  L3,
-  .23,
-  .23,
-  .08,
-  0x5b4435,
-  5,
-  .04,
-  -1.3,
-  18
-);
-
-cyl(
-  L3,
-  .04,
-  .04,
-  2.5,
-  0x634737,
-  5,
-  1.3,
-  -1.3,
-  10
-);
-
-const lampShade =
-  new THREE.Mesh(
-    new THREE.ConeGeometry(
-      .52,
-      .55,
-      20,
-      1,
-      true
-    ),
-    M(0xd2a77e)
-  );
-
-lampShade.position.set(
-  5,
-  2.65,
-  -1.3
-);
-
-L3.add(lampShade);
-
-sphere(
-  L3,
-  .12,
-  0xffc474,
-  5,
-  2.45,
-  -1.3,
-  [1,1,1],
-  {
-    emissive:0xff9e3f,
-    emissiveIntensity:2.2
-  }
-);
-
-
-/* bookshelf */
-
-box(
-  L3,
-  2.2,
-  3.1,
-  .55,
-  0x4c2c20,
-  5.15,
-  1.55,
-  5.3
-);
-
-for(let row=0;row<4;row++){
-
-  for(let col=0;col<5;col++){
-
-    box(
-      L3,
-      .23,
-      .8,
-      .24,
-      [
-        0x70352d,
-        0x345069,
-        0x7a6245,
-        0x4d4030
-      ][(row+col)%4],
-      4.52+col*.35,
-      .55+row*.63,
-      5.0
-    );
-  }
-}
-
-
-/* rainy window */
-
-box(
-  L3,
-  3.4,
-  2.8,
-  .12,
-  0x3c261d,
-  0,
-  2.05,
-  10.9
-);
-
-const rainWindow =
-  new THREE.Mesh(
-    new THREE.PlaneGeometry(
-      3.1,
-      2.5
-    ),
-    new THREE.MeshStandardMaterial({
-      map:canvasTexture(
-        (ctx,w,h)=>{
-
-          ctx.fillStyle='#101a23';
-
-          ctx.fillRect(
-            0,0,w,h
-          );
-
-          ctx.fillStyle =
-            'rgba(241,169,103,.15)';
-
-          ctx.fillRect(
-            w*.08,
-            h*.2,
-            w*.84,
-            h*.6
-          );
-
-          for(let i=0;i<48;i++){
-
-            const x=
-              Math.random()*w;
-
-            const y=
-              Math.random()*h;
-
-            ctx.strokeStyle =
-              'rgba(188,220,238,.34)';
-
-            ctx.lineWidth=2;
-
-            ctx.beginPath();
-
-            ctx.moveTo(
-              x,y
-            );
-
-            ctx.lineTo(
-              x-4,
-              y+28
-            );
-
-            ctx.stroke();
-          }
-
-        },
-        500,
-        400
-      ),
-      roughness:.72
-    })
-  );
-
-rainWindow.position.set(
-  0,
-  2.05,
-  10.82
-);
-
-L3.add(rainWindow);
-
-
-/* umbrella */
-
-cyl(
-  L3,
-  .04,
-  .04,
-  2.4,
-  0x242328,
-  5,
-  1.2,
-  8.1,
-  10
-);
-
-const umbrella =
-  new THREE.Mesh(
-    new THREE.ConeGeometry(
-      .82,
-      .35,
-      24,
-      1,
-      true
-    ),
-    M(0x6a252d)
-  );
-
-umbrella.position.set(
-  5,
-  2.4,
-  8.1
-);
-
-L3.add(umbrella);
-
-
-/* boots */
-
-for(let i=0;i<2;i++){
-
-  sphere(
-    L3,
-    .22,
-    0x3b2521,
-    4.55+i*.55,
-    .25,
-    8.55,
-    [1,.9,1.5]
-  );
-}
-
-
-/* rain particles */
-
-for(let i=0;i<140;i++){
-
-  const drop =
-    new THREE.Mesh(
-      new THREE.CylinderGeometry(
-        .008,
-        .008,
-        .4,
-        5
-      ),
-      M(
-        0x9bbbd1,
-        {
-          transparent:true,
-          opacity:.4
-        }
-      )
-    );
-
-  drop.position.set(
-    -7+Math.random()*14,
-    Math.random()*4.6,
-    -11+Math.random()*22
-  );
-
-  L3.add(drop);
-
-  rainParticles.push(drop);
-}
-
-
-/* ============================================================
-   LOBBY 4 — LIMINAL NEIGHBORHOOD
-============================================================ */
-
-const lobby4Paintings=[];
-
-for(let i=0;i<24;i++){
-
-  let x,z,ry;
-
-  if(i<7){
-
-    x=-5.8+i*1.85;
-    z=11.05;
-    ry=Math.PI;
-
-  }else if(i<13){
-
-    x=6.35;
-    z=8-(i-7)*3;
-    ry=-Math.PI/2;
-
-  }else if(i<20){
-
-    x=-5.8+(i-13)*1.85;
-    z=-11.05;
-    ry=0;
-
-  }else{
-
-    x=-6.35;
-    z=8-(i-20)*3;
-    ry=Math.PI/2;
-  }
-
-  lobby4Paintings.push({
-
-    x,
-    y:1.8,
-    z,
-    ry,
-
-    label:
-      i===0
-        ? 'The Empty Street'
-        : `Neighborhood Study ${i+1}`,
-
-    hue:220,
-
-    story:
-      'A familiar residential street after midnight — quiet enough to feel almost unreal.'
-  });
-}
-
-createRoom({
-
-  number:4,
-  side:1,
-  z:93,
-
-  wall:0x222a30,
-  floor:0x202527,
-  ceiling:0x0b1015,
-
-  light:0x708cae,
-  intensity:1.0,
-
-  neon:'#b5cbe6',
-  flicker:'lamp',
-
-  paintings:lobby4Paintings
-});
-
-const L4 =
-  rooms[3].group;
-
-
-/* road */
-
-const road =
-  new THREE.Mesh(
-    new THREE.PlaneGeometry(
-      7.2,
-      20
-    ),
-    M(
-      0x171a1d,
-      {
-        roughness:.96
-      }
-    )
-  );
-
-road.rotation.x =
-  -Math.PI/2;
-
-road.position.set(
-  0,
-  .025,
+  -7.18,
+  2.62,
   0
 );
 
-L4.add(road);
+screen.rotation.y=Math.PI/2;
 
+room1.add(screen);
 
-/* curbs */
+/*
+  Screen frame.
+*/
 
-for(
-  const side of [-1,1]
-){
+box(
+  room1,
+  .18,
+  2.9,
+  5.9,
+  0x1c1517,
+  -7.06,
+  2.62,
+  0
+);
 
-  box(
-    L4,
-    .28,
-    .15,
-    20,
-    0x666665,
-    side*3.75,
-    .075,
-    0
-  );
+/*
+  Velvet curtains.
+*/
 
-  box(
-    L4,
-    3.0,
-    .14,
-    20,
-    0x4b4c4b,
-    side*5.3,
-    .07,
-    0
-  );
-}
+box(
+  room1,
+  .28,
+  3.15,
+  .82,
+  0x501d28,
+  -6.98,
+  2.6,
+  -3.02
+);
 
+box(
+  room1,
+  .28,
+  3.15,
+  .82,
+  0x501d28,
+  -6.98,
+  2.6,
+  3.02
+);
 
-/* road lines */
+/*
+  Curtain tiebacks.
+*/
 
-for(
-  let z=-8.8;
-  z<9;
-  z+=2.8
-){
+sphere(
+  room1,
+  .09,
+  0xc39a55,
+  -6.78,
+  1.55,
+  -2.72,
+  [1,1,1],
+  {metalness:.7}
+);
 
-  box(
-    L4,
-    .1,
-    .025,
-    1.15,
-    0xa79a78,
-    0,
-    .055,
-    z
-  );
-}
+sphere(
+  room1,
+  .09,
+  0xc39a55,
+  -6.78,
+  1.55,
+  2.72,
+  [1,1,1],
+  {metalness:.7}
+);
 
+/*
+  Cinema seats — restrained and believable.
+*/
 
-/* ============================================================
-   HOUSE FRONT LEFT
-============================================================ */
-
-function neighborhoodHouse(
-  parent,
-  side,
-  z,
-  bodyColor,
-  roofColor
-){
-
-  const x =
-    side*5.35;
-
-  /* body */
-
-  box(
-    parent,
-    3.7,
-    3.3,
-    5.2,
-    bodyColor,
-    x,
-    1.65,
-    z
-  );
-
-
-  /* pitched roof */
-
-  const roof =
-    new THREE.Mesh(
-      new THREE.BoxGeometry(
-        4.5,
-        .25,
-        5.7
-      ),
-      M(roofColor)
-    );
-
-  roof.position.set(
-    x,
-    3.48,
-    z
-  );
-
-  roof.rotation.z =
-    side<0
-      ? -.16
-      : .16;
-
-  parent.add(roof);
-
-
-  /* door */
+function cinemaSeat(x,z){
 
   box(
-    parent,
-    .9,
-    2.1,
-    .1,
-    0x39241c,
-    x,
+    room1,
     1.05,
-    z+1.7*side
-  );
-
-
-  /* windows */
-
-  for(
-    const zz of [
-      z-.8,
-      z+.55
-    ]
-  ){
-
-    box(
-      parent,
-      1.05,
-      1.1,
-      .08,
-      0x11181e,
-      x-side*.05,
-      2.25,
-      zz
-    );
-
-    /* warm interior glow */
-
-    box(
-      parent,
-      .72,
-      .72,
-      .035,
-      0x8b694c,
-      x-side*.1,
-      2.25,
-      zz
-    );
-  }
-
-
-  /* porch */
-
-  box(
-    parent,
-    3.3,
-    .14,
-    1.25,
-    0x63462f,
-    x,
-    .1,
-    z+side*2.65
-  );
-
-  for(
-    const xx of [
-      x-1.35,
-      x+1.35
-    ]
-  ){
-
-    cyl(
-      parent,
-      .08,
-      .1,
-      2.3,
-      0x4d3628,
-      xx,
-      1.15,
-      z+side*3.1,
-      10
-    );
-  }
-
-
-  /* porch lamp */
-
-  sphere(
-    parent,
-    .1,
-    0xffc273,
-    x,
-    2.7,
-    z+side*2.65,
-    [1,1,1],
-    {
-      emissive:0xff9e42,
-      emissiveIntensity:2.5
-    }
-  );
-}
-
-neighborhoodHouse(
-  L4,
-  -1,
-  -6,
-  0x3a3d43,
-  0x25272b
-);
-
-neighborhoodHouse(
-  L4,
-  1,
-  5.8,
-  0x3b3837,
-  0x292526
-);
-
-
-/* smaller distant houses */
-
-box(
-  L4,
-  2.7,
-  2.5,
-  3.5,
-  0x303338,
-  -5.35,
-  1.25,
-  5.8
-);
-
-box(
-  L4,
-  2.7,
-  2.5,
-  3.5,
-  0x35383b,
-  5.35,
-  1.25,
-  -5.8
-);
-
-
-/* ============================================================
-   LAWNS
-============================================================ */
-
-for(
-  const side of [-1,1]
-){
-
-  for(
-    let z=-9;
-    z<=9;
-    z+=4.5
-  ){
-
-    box(
-      L4,
-      1.0,
-      .05,
-      3.5,
-      0x29352c,
-      side*3.15,
-      .035,
-      z
-    );
-  }
-}
-
-
-/* ============================================================
-   FENCES
-============================================================ */
-
-function fence(
-  parent,
-  side,
-  z
-){
-
-  const x =
-    side*3.8;
-
-  for(
-    let i=-2;
-    i<=2;
-    i++
-  ){
-
-    box(
-      parent,
-      .11,
-      .95,
-      .11,
-      0x574333,
-      x,
-      .48,
-      z+i*.65
-    );
-  }
-
-  box(
-    parent,
-    .11,
-    .12,
-    3.0,
-    0x574333,
+    .22,
+    .72,
+    0x5a2932,
     x,
     .62,
     z
   );
 
   box(
-    parent,
-    .11,
+    room1,
+    .95,
+    .88,
+    .18,
+    0x46212a,
+    x+.38,
+    1.05,
+    z
+  );
+
+  box(
+    room1,
     .12,
-    3.0,
-    0x574333,
-    x,
-    .35,
+    .55,
+    .12,
+    0x6b4934,
+    x-.38,
+    .34,
+    z
+  );
+
+  box(
+    room1,
+    .12,
+    .55,
+    .12,
+    0x6b4934,
+    x+.38,
+    .34,
     z
   );
 }
 
-fence(
-  L4,
-  -1,
-  4.2
+for(const x of [-4.8,-2.8,-.8,1.2]){
+
+  for(const z of [-3.5,-2.25,-1,1,2.25,3.5]){
+
+    cinemaSeat(x,z);
+  }
+}
+
+/*
+  Small aisle carpet.
+*/
+
+rug(
+  room1,
+  -3.0,
+  0,
+  8.8,
+  9.2,
+  0x321d24
 );
 
-fence(
-  L4,
-  1,
-  -4.2
-);
-
-
-/* ============================================================
-   PARKED CAR
-============================================================ */
-
-const car =
-  new THREE.Group();
-
-car.position.set(
-  -1.0,
-  .1,
-  -1.2
-);
-
-L4.add(car);
-
-
-/* body */
+/*
+  Projector.
+*/
 
 box(
-  car,
-  4.0,
-  .72,
-  1.62,
-  0x29343a,
-  0,
-  .68,
+  room1,
+  1.05,
+  .62,
+  .75,
+  0x24252a,
+  2.7,
+  2.35,
   0
 );
 
-
-/* hood */
-
-sphere(
-  car,
-  1,
-  0x29343a,
-  -1.45,
-  .9,
+cylinder(
+  room1,
+  .20,
+  .20,
+  .06,
+  0x69636a,
+  2.15,
+  2.35,
   0,
-  [1.35,.46,.88]
+  16,
+  Math.PI/2
 );
 
+/*
+  Projector beam.
+*/
 
-/* roof */
-
-sphere(
-  car,
-  1,
-  0x202a2f,
-  .45,
-  1.27,
-  0,
-  [1.5,.56,.76]
-);
-
-
-/* windows */
-
-for(
-  const z of [-.79,.79]
-){
-
-  box(
-    car,
-    1.75,
-    .5,
-    .035,
-    0x10191f,
-    .45,
-    1.37,
-    z
+const beam=
+  new THREE.Mesh(
+    new THREE.CylinderGeometry(
+      .05,
+      1.35,
+      7.5,
+      24,
+      1,
+      true
+    ),
+    new THREE.MeshBasicMaterial({
+      color:0x9fdcff,
+      transparent:true,
+      opacity:.025,
+      side:THREE.DoubleSide
+    })
   );
+
+beam.rotation.z=Math.PI/2;
+
+beam.position.set(
+  -.8,
+  2.48,
+  0
+);
+
+room1.add(beam);
+
+movingLights.push({
+  type:"beam",
+  object:beam
+});
+
+
+/* =========================================================
+   LOBBY 1 PAINTINGS — 50
+========================================================= */
+
+let n1=1;
+
+for(const z of [-11.15,11.15]){
+
+  const wall=
+    z<0 ? "back" : "front";
+
+  const ry=
+    z<0 ? 0 : Math.PI;
+
+  const positions=[
+    -6.0,-4.75,-3.5,-2.25,-1,
+    1,2.25,3.5,4.75,6.0
+  ];
+
+  for(const x of positions){
+
+    createPainting({
+      x,
+      y:1.48,
+      z,
+      ry,
+      label:"Night "+n1++,
+      hue:205+(n1*9)%45,
+      story:
+        "A quiet frame from the cinema's forgotten collection."
+    },room1);
+
+    createPainting({
+      x,
+      y:2.67,
+      z,
+      ry,
+      label:"Memory "+n1++,
+      hue:15+(n1*7)%35,
+      story:
+        "Something familiar, remembered differently."
+    },room1);
+  }
 }
 
+/*
+  10 paintings on outer wall, around the screen.
+*/
 
-/* wheels */
+for(const z of [-10,-8.1,-6.2,6.2,8.1]){
 
-for(
-  const x of [-1.25,1.25]
-){
+  for(const y of [1.45,2.65]){
 
-  for(
-    const z of [-.84,.84]
-  ){
-
-    torus(
-      car,
-      .42,
-      .145,
-      0x101112,
-      x,
-      .42,
+    createPainting({
+      x:-7.14,
+      y,
       z,
-      Math.PI/2
-    );
+      ry:Math.PI/2,
+      label:"Scene "+n1++,
+      hue:190+(n1*8)%55,
+      w:1.15,
+      h:.82,
+      story:
+        "A small moment left behind in the old theatre."
+    },room1);
   }
 }
 
 
-/* headlights */
+/* =========================================================
+   LOBBY 2 — SNOWY RURAL CABIN
+========================================================= */
 
-for(
-  const z of [-.55,.55]
-){
+const lobby2={
+  number:2,
+  side:1,
+  z:43,
+  wall:0x273039,
+  floor:0x1b2023,
+  ceiling:0x11171a,
+  light:0xa6d9ff,
+  intensity:.66,
+  flicker:"soft",
+  neon:0x83d9ff
+};
 
-  sphere(
-    car,
-    .13,
-    0xffd9a0,
-    -1.95,
-    .82,
-    z,
-    [1,1,1],
-    {
-      emissive:0xffb957,
-      emissiveIntensity:3
-    }
+const room2=createRoom(lobby2);
+
+room2.userData.theme="snow cabin";
+
+/*
+  Cabin façade against the far wall.
+*/
+
+const cabinX=7.05;
+
+/*
+  Logs.
+*/
+
+for(let y=.55;y<3.35;y+=.42){
+
+  box(
+    room2,
+    .38,
+    .31,
+    12.7,
+    y%0.84===0
+    ?0x654533
+    :0x513629,
+    cabinX,
+    y,
+    0
   );
-
-  const hl =
-    new THREE.PointLight(
-      0xffc875,
-      .42,
-      5
-    );
-
-  hl.position.set(
-    -1.98,
-    .82,
-    z
-  );
-
-  car.add(hl);
-
-  animatedObjects.push({
-    type:'carLight',
-    object:hl,
-    base:.42
-  });
 }
 
+/*
+  Cabin front porch.
+*/
 
-/* ============================================================
-   STREET LAMPS
-============================================================ */
+box(
+  room2,
+  2.65,
+  .16,
+  8.5,
+  0x5a3c2e,
+  5.55,
+  .18,
+  0
+);
 
-function streetLamp(
-  x,
-  z
-){
+for(const z of [-3.7,3.7]){
 
-  cyl(
-    L4,
-    .08,
-    .13,
-    4.0,
-    0x25292b,
-    x,
-    2,
+  box(
+    room2,
+    .18,
+    3.05,
+    .18,
+    0x6d4935,
+    4.38,
+    1.62,
+    z
+  );
+}
+
+/*
+  Porch roof.
+*/
+
+box(
+  room2,
+  2.9,
+  .20,
+  8.8,
+  0x3b2925,
+  5.65,
+  3.55,
+  0
+);
+
+/*
+  Snow resting on roof.
+*/
+
+box(
+  room2,
+  2.7,
+  .14,
+  8.5,
+  0xb8c8cf,
+  5.65,
+  3.68,
+  0
+);
+
+/*
+  Cabin door.
+*/
+
+box(
+  room2,
+  .16,
+  2.35,
+  1.35,
+  0x39241c,
+  6.83,
+  1.32,
+  0
+);
+
+box(
+  room2,
+  .03,
+  .90,
+  .98,
+  0x2b1a15,
+  6.73,
+  1.32,
+  0
+);
+
+/*
+  Cabin windows.
+*/
+
+for(const z of [-2.65,2.65]){
+
+  windowFrame(
+    room2,
+    6.78,
+    2.02,
     z,
-    12
+    1.45,
+    1.25,
+    -Math.PI/2,
+    true
   );
+}
 
-  tubeBetween(
-    L4,
-    new THREE.Vector3(
-      x,
-      3.9,
-      z
-    ),
-    new THREE.Vector3(
-      x+(x<0?.7:-.7),
-      4.0,
-      z
-    ),
-    .055,
-    0x25292b
-  );
+/*
+  Warm windows.
+*/
 
-  sphere(
-    L4,
-    .16,
-    0xffc879,
-    x+(x<0?.7:-.7),
-    3.8,
-    z,
-    [1,1,1],
-    {
-      emissive:0xffa13f,
-      emissiveIntensity:2.5
-    }
-  );
+for(const z of [-2.65,2.65]){
 
-  const light =
+  const light=
     new THREE.PointLight(
-      0xffc37a,
-      .78,
-      8
+      0xffc17b,
+      .32,
+      4
     );
 
   light.position.set(
-    x+(x<0?.7:-.7),
-    3.8,
+    6.5,
+    2,
     z
   );
 
-  L4.add(light);
+  room2.add(light);
+}
 
-  flickerLights.push({
-    light,
-    base:.78,
-    mode:'lamp'
+/*
+  Lantern.
+*/
+
+cylinder(
+  room2,
+  .13,
+  .13,
+  .08,
+  0x6d5338,
+  4.18,
+  2.55,
+  0,
+  14,
+  0,
+  0,
+  Math.PI/2
+);
+
+sphere(
+  room2,
+  .10,
+  0xffca7e,
+  4.02,
+  2.42,
+  0,
+  [1,.9,1],
+  {
+    emissive:0xff9e42,
+    emissiveIntensity:2
+  }
+);
+
+/*
+  Woodpile.
+*/
+
+for(let i=0;i<7;i++){
+
+  cylinder(
+    room2,
+    .11,
+    .11,
+    1.1,
+    0x644432,
+    4.15,
+    .18+i*.18,
+    -5.0+(i%2)*.12,
+    10,
+    0,
+    0,
+    Math.PI/2
+  );
+}
+
+/*
+  Pine trees.
+*/
+
+function pine(group,x,z,s=.9){
+
+  cylinder(
+    group,
+    .09*s,
+    .14*s,
+    1.2*s,
+    0x44362a,
+    x,
+    .6*s,
+    z,
+    8
+  );
+
+  for(let i=0;i<3;i++){
+
+    const cone=
+      new THREE.Mesh(
+        new THREE.ConeGeometry(
+          (.72-i*.12)*s,
+          1.15*s,
+          12
+        ),
+        material(0x263a32,{roughness:1})
+      );
+
+    cone.position.set(
+      x,
+      1.1*s+i*.52*s,
+      z
+    );
+
+    cone.castShadow=true;
+
+    group.add(cone);
+  }
+}
+
+pine(room2,3.8,-7,.9);
+pine(room2,4.4,7,.75);
+
+
+/*
+  Snow drifts.
+*/
+
+for(let i=0;i<12;i++){
+
+  sphere(
+    room2,
+    .45+Math.random()*.35,
+    0xc3d2d8,
+    -5+Math.random()*11,
+    .15+Math.random()*.13,
+    -10+Math.random()*20,
+    [1.7,.35,.7]
+  );
+}
+
+
+/* Snowfall */
+
+for(let i=0;i<100;i++){
+
+  const flake=
+    sphere(
+      room2,
+      .025,
+      0xeaf6ff,
+      -6+Math.random()*12,
+      .3+Math.random()*4.3,
+      -10+Math.random()*20
+    );
+
+  snowParticles.push({
+    object:flake,
+    room:room2
   });
 }
 
-streetLamp(
-  -3.1,
-  7.2
-);
 
-streetLamp(
-  3.1,
-  -7.2
-);
+/* =========================================================
+   LOBBY 2 PAINTINGS — 22
+========================================================= */
+
+let n2=1;
+
+for(const z of [-10.9,10.9]){
+
+  const ry=z<0?0:Math.PI;
+
+  for(const x of [-5.7,-3.9,-2.1,-.3,1.5,3.3,5.1]){
+
+    createPainting({
+      x,
+      y:2.15,
+      z,
+      ry,
+      label:"Winter "+n2++,
+      hue:195+(n2*7)%35,
+      story:
+        "Cold air, warm windows, and a road disappearing into winter."
+    },room2);
+  }
+}
+
+for(const z of [-8,-5.5,5.5,8]){
+
+  createPainting({
+    x:6.88,
+    y:1.45,
+    z,
+    ry:-Math.PI/2,
+    label:"Snow "+n2++,
+    hue:190+(n2*9)%45,
+    story:
+      "A quiet rural evening beneath the blue winter light."
+  },room2);
+}
 
 
-/* ============================================================
-   UTILITY POLE + CORRECT WIRES
-============================================================ */
+/* =========================================================
+   LOBBY 3 — RAINY COTTAGE
+========================================================= */
 
-cyl(
-  L4,
-  .15,
+const lobby3={
+  number:3,
+  side:-1,
+  z:68,
+  wall:0x39282b,
+  floor:0x29201e,
+  ceiling:0x171113,
+  light:0xffbf87,
+  intensity:.9,
+  flicker:"ember",
+  neon:0x75d7ff
+};
+
+const room3=createRoom(lobby3);
+
+room3.userData.theme="rainy cottage";
+
+
+/* Fireplace */
+
+const fireX=-7.05;
+
+for(let row=0;row<3;row++){
+
+  for(let col=-2;col<=2;col++){
+
+    box(
+      room3,
+      .38,
+      .34,
+      1.0,
+      row%2
+      ?0x62504a
+      :0x51423e,
+      fireX,
+      .65+row*.35,
+      col*.55
+    );
+  }
+}
+
+/*
+  Mantel.
+*/
+
+box(
+  room3,
+  .42,
   .18,
-  4.7,
-  0x403b35,
-  5.0,
-  2.35,
-  7.7,
+  3.1,
+  0x594038,
+  fireX+.02,
+  1.78,
+  0
+);
+
+/*
+  Fireplace opening.
+*/
+
+box(
+  room3,
+  .12,
+  1.25,
+  2.05,
+  0x120c0d,
+  fireX+.12,
+  .98,
+  0
+);
+
+/*
+  Fire.
+*/
+
+for(let i=0;i<6;i++){
+
+  const flame=
+    sphere(
+      room3,
+      .18,
+      i%2
+      ?0xffa13b
+      :0xffd267,
+      fireX+.25,
+      .48+i*.08,
+      -.35+i*.13,
+      [.7,1.5,.65],
+      {
+        emissive:0xff7226,
+        emissiveIntensity:1.7
+      }
+    );
+
+  fireMeshes.push(flame);
+}
+
+const fireLight=
+  new THREE.PointLight(
+    0xff8a3b,
+    1.1,
+    7
+  );
+
+fireLight.position.set(
+  fireX+.7,
+  1.1,
+  0
+);
+
+room3.add(fireLight);
+
+flickerLights.push({
+  light:fireLight,
+  base:1.1,
+  mode:"ember"
+});
+
+
+/* Rug */
+
+rug(
+  room3,
+  -2.2,
+  0,
+  7.3,
+  6.2,
+  0x493038
+);
+
+
+/* Sofa */
+
+box(
+  room3,
+  2.15,
+  .34,
+  4.2,
+  0x49343a,
+  -2.9,
+  .65,
+  0
+);
+
+box(
+  room3,
+  .42,
+  1.35,
+  4.2,
+  0x3a2a2e,
+  -1.98,
+  1.05,
+  0
+);
+
+for(const z of [-1.4,0,1.4]){
+
+  box(
+    room3,
+    .45,
+    .42,
+    1.1,
+    0x62444a,
+    -3.95,
+    1.03,
+    z
+  );
+}
+
+
+/* Coffee table */
+
+table(
+  room3,
+  -.55,
+  0,
+  2.1,
+  1.1,
+  .62,
+  0x4a2c20
+);
+
+
+/* Lamp */
+
+cylinder(
+  room3,
+  .035,
+  .055,
+  1.8,
+  0x72583e,
+  2.7,
+  .9,
+  -3.5,
   12
 );
 
+sphere(
+  room3,
+  .18,
+  0xffca89,
+  2.7,
+  1.86,
+  -3.5,
+  [1,.7,1],
+  {
+    emissive:0xffa044,
+    emissiveIntensity:1.5
+  }
+);
 
-/* crossarm */
+const lampLight=
+  new THREE.PointLight(
+    0xffc27e,
+    .4,
+    5
+  );
 
-box(
-  L4,
-  2.3,
-  .11,
-  .11,
-  0x403830,
-  5.0,
-  4.05,
-  7.7
+lampLight.position.set(
+  2.7,
+  1.9,
+  -3.5
+);
+
+room3.add(lampLight);
+
+
+/* Rain window */
+
+windowFrame(
+  room3,
+  0,
+  2.55,
+  11.82,
+  6.0,
+  2.35,
+  0,
+  true
 );
 
 
 /*
-   Wires run from the pole toward the opposite
-   side of the street, with slightly different
-   attachment heights.
+  Blue window light.
 */
 
-tubeBetween(
-  L4,
-  new THREE.Vector3(
-    5.0,
-    4.05,
-    7.7
-  ),
-  new THREE.Vector3(
-    -4.8,
-    3.91,
-    -7.5
-  ),
-  .018,
-  0x151619
-);
-
-tubeBetween(
-  L4,
-  new THREE.Vector3(
-    5.0,
-    3.88,
-    7.7
-  ),
-  new THREE.Vector3(
-    -4.8,
-    3.73,
-    -7.5
-  ),
-  .016,
-  0x151619
-);
-
-tubeBetween(
-  L4,
-  new THREE.Vector3(
-    5.0,
-    3.71,
-    7.7
-  ),
-  new THREE.Vector3(
-    -4.8,
-    3.55,
-    -7.5
-  ),
-  .014,
-  0x151619
-);
-
-
-/* ============================================================
-   MAILBOXES
-============================================================ */
-
-function mailbox(
-  parent,
-  side,
-  z
-){
-
-  const x =
-    side*3.2;
-
-  cyl(
-    parent,
-    .26,
-    .26,
-    .7,
-    0x46555a,
-    x,
-    .92,
-    z,
-    18
+const rainLight=
+  new THREE.PointLight(
+    0x4b9cd0,
+    .48,
+    8
   );
 
-  cyl(
-    parent,
-    .045,
-    .045,
-    1.5,
-    0x4c392d,
-    x,
-    .3,
-    z,
-    10
-  );
-}
-
-mailbox(
-  L4,
-  -1,
-  1.5
-);
-
-mailbox(
-  L4,
-  1,
-  -1.5
-);
-
-
-/* ============================================================
-   TREES
-============================================================ */
-
-function neighborhoodTree(
-  parent,
-  x,z
-){
-
-  cyl(
-    parent,
-    .14,
-    .19,
-    2.6,
-    0x43372d,
-    x,
-    1.3,
-    z,
-    10
-  );
-
-  sphere(
-    parent,
-    1.25,
-    0x25352b,
-    x,
-    2.7,
-    z,
-    [1,.9,1]
-  );
-
-  sphere(
-    parent,
-    .95,
-    0x2c4032,
-    x-.55,
-    3.25,
-    z+.1
-  );
-
-  sphere(
-    parent,
-    .85,
-    0x223229,
-    x+.55,
-    3.18,
-    z-.15
-  );
-}
-
-neighborhoodTree(
-  L4,
-  -5.1,
-  1.8
-);
-
-neighborhoodTree(
-  L4,
-  5.1,
-  -1.8
-);
-
-
-/* ============================================================
-   BENCH + BIN
-============================================================ */
-
-box(
-  L4,
-  2.6,
-  .18,
-  .58,
-  0x594534,
-  -4.9,
-  .78,
-  5.0
-);
-
-for(
-  const x of [-5.7,-4.1]
-){
-
-  cyl(
-    L4,
-    .055,
-    .055,
-    .7,
-    0x423329,
-    x,
-    .4,
-    5.0,
-    10
-  );
-}
-
-cyl(
-  L4,
-  .38,
-  .33,
-  .9,
-  0x41484a,
-  4.9,
-  .45,
-  5.2,
-  18
-);
-
-
-/* ============================================================
-   STREET SIGN
-============================================================ */
-
-box(
-  L4,
-  .07,
+rainLight.position.set(
+  0,
   2.4,
-  .07,
-  0x40352c,
-  -4.4,
-  1.2,
-  -7.8
+  10.8
 );
 
-box(
-  L4,
-  1.25,
-  .4,
-  .08,
-  0x273746,
-  -4.4,
-  2.25,
-  -7.8
-);
-
-const streetSign =
-  new THREE.Mesh(
-    new THREE.PlaneGeometry(
-      1.05,
-      .28
-    ),
-    new THREE.MeshStandardMaterial({
-      map:canvasTexture(
-        (ctx,w,h)=>{
-
-          ctx.fillStyle='#263746';
-
-          ctx.fillRect(
-            0,0,w,h
-          );
-
-          ctx.fillStyle='#d5dde2';
-
-          ctx.font='24px Georgia';
-
-          ctx.textAlign='center';
-
-          ctx.textBaseline='middle';
-
-          ctx.fillText(
-            'QUIET LANE',
-            w/2,
-            h/2
-          );
-
-        },
-        300,
-        80
-      ),
-      roughness:.8
-    })
-  );
-
-streetSign.position.set(
-  -4.45,
-  2.25,
-  -7.75
-);
-
-streetSign.rotation.y =
-  Math.PI/2;
-
-L4.add(streetSign);
+room3.add(rainLight);
 
 
-/* ============================================================
-   PUDDLES
-============================================================ */
+/* Rain */
 
-for(let i=0;i<9;i++){
+for(let i=0;i<130;i++){
 
-  const p =
-    new THREE.Mesh(
-      new THREE.CircleGeometry(
-        .35+Math.random()*.65,
-        24
-      ),
-      M(
-        0x35464e,
-        {
-          transparent:true,
-          opacity:.34,
-          metalness:.4,
-          roughness:.1
-        }
-      )
+  const drop=
+    cylinder(
+      room3,
+      .008,
+      .008,
+      .35,
+      0x8fcfff,
+      -6.5+Math.random()*13,
+      .2+Math.random()*4.2,
+      8+Math.random()*3,
+      5,
+      0,
+      0,
+      0,
+      {
+        emissive:0x3e86bb,
+        emissiveIntensity:.5
+      }
     );
 
-  p.rotation.x =
-    -Math.PI/2;
-
-  p.position.set(
-    -3.1+Math.random()*6.2,
-    .056,
-    -8+Math.random()*16
-  );
-
-  L4.add(p);
-}
-
-
-/* ============================================================
-   LOBBY 5 — ABANDONED OLD HOUSE
-============================================================ */
-
-const lobby5Paintings=[];
-
-for(let i=0;i<20;i++){
-
-  let x,z,ry;
-
-  if(i<6){
-
-    x=-5.8+i*2;
-    z=11.05;
-    ry=Math.PI;
-
-  }else if(i<11){
-
-    x=6.35;
-    z=8-(i-6)*3.5;
-    ry=-Math.PI/2;
-
-  }else if(i<17){
-
-    x=-5.8+(i-11)*2;
-    z=-11.05;
-    ry=0;
-
-  }else{
-
-    x=-6.35;
-    z=8-(i-17)*3.5;
-    ry=Math.PI/2;
-  }
-
-  lobby5Paintings.push({
-
-    x,
-    y:1.72,
-    z,
-    ry,
-
-    label:
-      i===0
-        ? 'Anemoia'
-        : `Unquiet Room ${i+1}`,
-
-    hue:350,
-
-    winner:i===0,
-
-    story:
-      'A room that feels as though somebody has only just left it.'
+  rainParticles.push({
+    object:drop,
+    room:room3
   });
 }
 
-createRoom({
 
-  number:5,
-  side:-1,
-  z:118,
-
-  wall:0x2b1115,
-  floor:0x120a0c,
-  ceiling:0x090608,
-
-  wallpaper:true,
-
-  light:0x79242b,
-  intensity:.88,
-
-  neon:'#ff4d55',
-  flicker:'strobe',
-
-  paintings:lobby5Paintings
-});
-
-const L5 =
-  rooms[4].group;
-
-
-/* old rug */
-
-const oldRug =
-  new THREE.Mesh(
-    new THREE.PlaneGeometry(
-      5.5,
-      4.4
-    ),
-    M(
-      0x3a181c,
-      {
-        roughness:1
-      }
-    )
-  );
-
-oldRug.rotation.x =
-  -Math.PI/2;
-
-oldRug.position.set(
-  0,
-  .04,
-  1.0
-);
-
-L5.add(oldRug);
-
-
-/* grandfather clock */
-
-const grandfather =
-  new THREE.Group();
-
-grandfather.position.set(
-  4.7,
-  0,
-  -6
-);
-
-L5.add(grandfather);
-
-box(
-  grandfather,
-  1.35,
-  3.95,
-  .62,
-  0x3b2118,
-  0,
-  1.98,
-  0
-);
-
-sphere(
-  grandfather,
-  .49,
-  0xd7c39f,
-  0,
-  2.78,
-  -.36,
-  [1,1,.12]
-);
-
-tubeBetween(
-  grandfather,
-  new THREE.Vector3(
-    0,
-    2.78,
-    -.5
-  ),
-  new THREE.Vector3(
-    .24,
-    2.78,
-    -.5
-  ),
-  .023,
-  0x32241e
-);
-
-tubeBetween(
-  grandfather,
-  new THREE.Vector3(
-    0,
-    2.78,
-    -.51
-  ),
-  new THREE.Vector3(
-    0,
-    3.04,
-    -.51
-  ),
-  .023,
-  0x32241e
-);
-
-
-/* pendulum */
-
-const pendulum =
-  new THREE.Group();
-
-pendulum.position.set(
-  0,
-  1.55,
-  -.4
-);
-
-grandfather.add(
-  pendulum
-);
-
-cyl(
-  pendulum,
-  .018,
-  .018,
-  1.75,
-  0x49372d,
-  0,
-  -.65,
-  0,
-  8
-);
-
-sphere(
-  pendulum,
-  .24,
-  0xb48b50,
-  0,
-  -1.52,
-  0,
-  [1,.8,.3],
-  {
-    metalness:.55
-  }
-);
-
-pendulums.push(
-  pendulum
-);
-
-
-/* rocking chair */
-
-const rocking =
-  new THREE.Group();
-
-rocking.position.set(
-  1.5,
-  .05,
-  3.8
-);
-
-L5.add(rocking);
-
-box(
-  rocking,
-  1.1,
-  .2,
-  .95,
-  0x4b3024,
-  0,
-  .76,
-  0
-);
-
-box(
-  rocking,
-  1,
-  1.45,
-  .18,
-  0x4b3024,
-  0,
-  1.45,
-  .42
-);
-
-for(
-  const x of [-.47,.47]
-){
-
-  cyl(
-    rocking,
-    .065,
-    .065,
-    1.25,
-    0x3a241c,
-    x,
-    .45,
-    0,
-    10
-  );
-}
-
-
-/* side table */
-
-cyl(
-  L5,
-  .48,
-  .48,
-  .12,
-  0x553225,
-  -1.6,
-  .72,
-  3.8,
-  20
-);
-
-cyl(
-  L5,
-  .07,
-  .07,
-  .65,
-  0x43281f,
-  -1.6,
-  .38,
-  3.8,
-  10
-);
-
-
-/* candelabra */
-
-cyl(
-  L5,
-  .2,
-  .2,
-  .08,
-  0x775f43,
-  -1.6,
-  .82,
-  3.8,
-  16,
-  0,
-  {
-    metalness:.7
-  }
-);
-
-for(let i=0;i<3;i++){
-
-  cyl(
-    L5,
-    .065,
-    .065,
-    .3,
-    0xe0ceb0,
-    -1.6+(i-1)*.38,
-    1.05,
-    3.8,
-    10
-  );
-
-  sphere(
-    L5,
-    .055,
-    0xffc06a,
-    -1.6+(i-1)*.38,
-    1.25,
-    3.8,
-    [1,1,1],
-    {
-      emissive:0xff8b24,
-      emissiveIntensity:2.5
-    }
-  );
-}
-
-
-/* mirror */
-
-const mirrorFrame =
-  new THREE.Mesh(
-    new THREE.TorusGeometry(
-      1,
-      .13,
-      12,
-      28
-    ),
-    M(
-      0x4b2925,
-      {
-        roughness:.55
-      }
-    )
-  );
-
-mirrorFrame.position.set(
-  -4.75,
-  2,
-  5.8
-);
-
-mirrorFrame.rotation.y =
-  Math.PI/2;
-
-L5.add(
-  mirrorFrame
-);
-
-const mirror =
-  new THREE.Mesh(
-    new THREE.CircleGeometry(
-      .84,
-      32
-    ),
-    M(
-      0x354049,
-      {
-        metalness:.4,
-        roughness:.18
-      }
-    )
-  );
-
-mirror.position.set(
-  -4.77,
-  2,
-  5.8
-);
-
-mirror.rotation.y =
-  Math.PI/2;
-
-L5.add(mirror);
-
-
-/* suitcase */
-
-box(
-  L5,
-  1.6,
-  .65,
-  .9,
-  0x473025,
-  2.7,
-  .4,
-  7
-);
-
-box(
-  L5,
-  1.38,
-  .05,
-  .72,
-  0x765039,
-  2.7,
-  .75,
-  7
-);
-
-cyl(
-  L5,
-  .07,
-  .07,
-  .6,
-  0x8b6845,
-  2.7,
-  .94,
-  7,
-  10
-);
-
-
-/* bottles */
-
-for(let i=0;i<5;i++){
-
-  cyl(
-    L5,
-    .09,
-    .07,
-    .5+Math.random()*.3,
-    0x384846,
-    -4.5+i*.43,
-    .3,
-    -6.8,
+/* Boots beside entrance */
+
+for(const z of [-.42,.42]){
+
+  cylinder(
+    room3,
+    .12,
+    .14,
+    .5,
+    0x272125,
+    4.95,
+    .27,
+    z,
     12
   );
 }
 
 
-/* dead plant */
+/* =========================================================
+   LOBBY 3 PAINTINGS — 26
+========================================================= */
 
-cyl(
-  L5,
-  .28,
-  .23,
-  .42,
-  0x42271d,
-  5.1,
-  .25,
-  6.5,
-  16
+let n3=1;
+
+for(const z of [-10.9,10.9]){
+
+  const ry=z<0?0:Math.PI;
+
+  for(const x of [-5.8,-4.35,-2.9,-1.45,1.45,2.9,4.35,5.8]){
+
+    createPainting({
+      x,
+      y:2.2,
+      z,
+      ry,
+      label:"Rain "+n3++,
+      hue:205+(n3*8)%40,
+      story:
+        "The kind of evening that makes staying inside feel like a memory."
+    },room3);
+  }
+}
+
+for(const z of [-9,-7,-5.2,5.2,7,9]){
+
+  createPainting({
+    x:-6.88,
+    y:2.1,
+    z,
+    ry:Math.PI/2,
+    label:"Cottage "+n3++,
+    hue:20+(n3*7)%40,
+    story:
+      "Warm light from a room where somebody has just left."
+  },room3);
+}
+
+
+/* =========================================================
+   LOBBY 4 — QUIET RESIDENTIAL NEIGHBORHOOD
+========================================================= */
+
+const lobby4={
+  number:4,
+  side:1,
+  z:93,
+  wall:0x222b31,
+  floor:0x171b1e,
+  ceiling:0x101419,
+  light:0x8bb8d5,
+  intensity:.55,
+  flicker:"soft",
+  neon:0x79d8ff
+};
+
+const room4=createRoom(lobby4);
+
+room4.userData.theme="neighborhood";
+
+
+/*
+  CENTRAL RESIDENTIAL ROAD
+*/
+
+box(
+  room4,
+  7.0,
+  .035,
+  22.5,
+  0x151719,
+  0,
+  .02,
+  0
 );
 
-for(let i=0;i<7;i++){
+/*
+  Sidewalks.
+*/
 
-  tubeBetween(
-    L5,
-    new THREE.Vector3(
-      5.1,
-      .47,
-      6.5
-    ),
-    new THREE.Vector3(
-      5.1+
-        Math.sin(i*1.8)*.65,
-      .9+(i%2)*.3,
-      6.5+
-        Math.cos(i*1.7)*.45
-    ),
-    .025,
-    0x293326
+box(
+  room4,
+  3.5,
+  .07,
+  22.5,
+  0x4b4744,
+  -5.25,
+  .055,
+  0
+);
+
+box(
+  room4,
+  3.5,
+  .07,
+  22.5,
+  0x4b4744,
+  5.25,
+  .055,
+  0
+);
+
+/*
+  Curbs.
+*/
+
+box(
+  room4,
+  .18,
+  .16,
+  22.5,
+  0x78736d,
+  -3.62,
+  .10,
+  0
+);
+
+box(
+  room4,
+  .18,
+  .16,
+  22.5,
+  0x78736d,
+  3.62,
+  .10,
+  0
+);
+
+
+/*
+  Lane markings — subtle.
+*/
+
+for(let z=-9;z<=9;z+=3){
+
+  box(
+    room4,
+    .07,
+    .008,
+    1.0,
+    0x7c7d7a,
+    0,
+    .045,
+    z
   );
 }
 
 
-/* hanging red bulb */
+/* =========================================================
+   HOUSES
+========================================================= */
 
-cyl(
-  L5,
-  .018,
-  .018,
-  1.4,
-  0x171315,
+function neighborhoodHouse(
+  group,
+  x,
+  z,
+  width,
+  depth,
+  facadeColor,
+  trimColor
+){
+
+  /*
+    Main lower façade.
+  */
+
+  box(
+    group,
+    width,
+    2.7,
+    depth,
+    facadeColor,
+    x,
+    1.45,
+    z
+  );
+
+  /*
+    Roof.
+  */
+
+  box(
+    group,
+    width+.45,
+    .22,
+    depth+.4,
+    0x29262a,
+    x,
+    2.88,
+    z
+  );
+
+  /*
+    Porch.
+  */
+
+  box(
+    group,
+    1.55,
+    .12,
+    1.8,
+    0x62463a,
+    x,
+    .12,
+    z
+  );
+
+  /*
+    Door.
+  */
+
+  box(
+    group,
+    .13,
+    2.05,
+    .82,
+    0x3b2823,
+    x,
+    1.08,
+    z
+  );
+
+  /*
+    Door frame.
+  */
+
+  box(
+    group,
+    .10,
+    2.18,
+    .12,
+    trimColor,
+    x,
+    1.1,
+    z-.49
+  );
+
+  box(
+    group,
+    .10,
+    2.18,
+    .12,
+    trimColor,
+    x,
+    1.1,
+    z+.49
+  );
+
+  /*
+    Windows on either side.
+  */
+
+  for(const zz of [-1.35,1.35]){
+
+    windowFrame(
+      group,
+      x,
+      1.72,
+      z+zz,
+      .95,
+      1.0,
+      x<0 ? -Math.PI/2 : Math.PI/2,
+      true
+    );
+  }
+
+  /*
+    Porch posts.
+  */
+
+  for(const zz of [-.72,.72]){
+
+    box(
+      group,
+      .11,
+      2.45,
+      .11,
+      trimColor,
+      x,
+      1.23,
+      z+zz
+    );
+  }
+
+  /*
+    Porch light.
+  */
+
+  sphere(
+    group,
+    .08,
+    0xffc27e,
+    x-(x>0?.14:-.14),
+    2.25,
+    z,
+    [1,.8,1],
+    {
+      emissive:0xffa14c,
+      emissiveIntensity:2
+    }
+  );
+}
+
+
+/*
+  Houses along BOTH sides of the little street.
+*/
+
+neighborhoodHouse(
+  room4,
+  -6.15,
+  -7.0,
+  2.65,
+  4.1,
+  0x554348,
+  0x8b7266
+);
+
+neighborhoodHouse(
+  room4,
+  -6.15,
+  1.0,
+  2.65,
+  4.2,
+  0x4d5556,
+  0x8a8880
+);
+
+neighborhoodHouse(
+  room4,
+  6.15,
+  -6.4,
+  2.65,
+  4.6,
+  0x4a4140,
+  0x867366
+);
+
+neighborhoodHouse(
+  room4,
+  6.15,
+  2.0,
+  2.65,
+  4.5,
+  0x3f4a4d,
+  0x77878a
+);
+
+
+/* =========================================================
+   HOUSE GARDENS / SHRUBS
+========================================================= */
+
+function shrub(group,x,z,s=.45){
+
+  sphere(
+    group,
+    s,
+    0x26382f,
+    x,
+    s,
+    z,
+    [1.35,.75,1]
+  );
+
+  sphere(
+    group,
+    s*.7,
+    0x31483b,
+    x+.25,
+    s*.95,
+    z+.12,
+    [1,.75,1]
+  );
+}
+
+for(const p of [
+  [-4.0,-8],
+  [-4.2,-5.9],
+  [-4.1,.0],
+  [-4.0,3],
+  [4.0,-8.2],
+  [4.2,-4.5],
+  [4.1,0],
+  [4.0,4]
+]){
+
+  shrub(
+    room4,
+    p[0],
+    p[1],
+    .38
+  );
+}
+
+
+/* =========================================================
+   MAILBOXES
+========================================================= */
+
+function mailbox(group,x,z){
+
+  cylinder(
+    group,
+    .045,
+    .055,
+    .8,
+    0x3c3a38,
+    x,
+    .4,
+    z,
+    10
+  );
+
+  box(
+    group,
+    .42,
+    .30,
+    .25,
+    0x47555a,
+    x,
+    .84,
+    z
+  );
+
+  sphere(
+    group,
+    .025,
+    0xb79a63,
+    x,
+    .86,
+    z+.13,
+    [1,1,1],
+    {metalness:.7}
+  );
+}
+
+mailbox(room4,-3.95,-6.8);
+mailbox(room4,-3.95,2);
+mailbox(room4,3.95,-6.2);
+mailbox(room4,3.95,2.4);
+
+
+/* =========================================================
+   STREET LAMP
+========================================================= */
+
+function streetLamp(group,x,z){
+
+  cylinder(
+    group,
+    .065,
+    .08,
+    3.7,
+    0x28292b,
+    x,
+    1.85,
+    z,
+    12
+  );
+
+  lineBetween(
+    group,
+    new THREE.Vector3(
+      x,
+      3.65,
+      z
+    ),
+    new THREE.Vector3(
+      x-(x>0?.45:-.45),
+      3.65,
+      z
+    ),
+    .045,
+    0x29292a
+  );
+
+  sphere(
+    group,
+    .12,
+    0xffc783,
+    x-(x>0?.5:-.5),
+    3.58,
+    z,
+    [1,.7,1],
+    {
+      emissive:0xff9e4b,
+      emissiveIntensity:2
+    }
+  );
+
+  const light=
+    new THREE.PointLight(
+      0xffc27e,
+      .55,
+      7
+    );
+
+  light.position.set(
+    x-(x>0?.5:-.5),
+    3.58,
+    z
+  );
+
+  group.add(light);
+
+  flickerLights.push({
+    light,
+    base:.55,
+    mode:"lamp"
+  });
+}
+
+streetLamp(room4,-3.95,-1);
+streetLamp(room4,3.95,7);
+
+
+/* =========================================================
+   PARKED CAR
+========================================================= */
+
+function parkedCar(group,x,z){
+
+  /*
+    Body.
+  */
+
+  box(
+    group,
+    1.7,
+    .48,
+    3.35,
+    0x39434a,
+    x,
+    .55,
+    z
+  );
+
+  /*
+    Cabin.
+  */
+
+  box(
+    group,
+    1.35,
+    .48,
+    1.65,
+    0x293136,
+    x,
+    .92,
+    z+.05
+  );
+
+  /*
+    Windows.
+  */
+
+  box(
+    group,
+    1.39,
+    .30,
+    .72,
+    0x17252c,
+    x,
+    1.0,
+    z-.38
+  );
+
+  box(
+    group,
+    1.39,
+    .30,
+    .62,
+    0x17252c,
+    x,
+    1.0,
+    z+.48
+  );
+
+  /*
+    Wheels.
+  */
+
+  for(const zz of [-1.02,1.02]){
+
+    cylinder(
+      group,
+      .28,
+      .28,
+      .12,
+      0x111214,
+      x-0.88,
+      .35,
+      z+zz,
+      16,
+      0,
+      0,
+      Math.PI/2
+    );
+
+    cylinder(
+      group,
+      .11,
+      .11,
+      .125,
+      0x74706b,
+      x-.89,
+      .35,
+      z+zz,
+      12,
+      0,
+      0,
+      Math.PI/2
+    );
+  }
+
+  /*
+    Headlights.
+  */
+
+  for(const zz of [-1.42,1.42]){
+
+    sphere(
+      group,
+      .07,
+      0xe5f1df,
+      x-.87,
+      .62,
+      z+zz,
+      [1,.7,1],
+      {
+        emissive:0xc9e8ff,
+        emissiveIntensity:2
+      }
+    );
+  }
+}
+
+parkedCar(
+  room4,
+  1.25,
+  -4.1
+);
+
+
+/* =========================================================
+   UTILITY POLES + REALISTIC WIRES
+========================================================= */
+
+function utilityPole(group,x,z){
+
+  cylinder(
+    group,
+    .075,
+    .10,
+    4.35,
+    0x4b3a2f,
+    x,
+    2.18,
+    z,
+    10
+  );
+
+  /*
+    Crossarm runs ACROSS the pole.
+  */
+
+  box(
+    group,
+    1.35,
+    .10,
+    .14,
+    0x4b3a2f,
+    x,
+    4.02,
+    z
+  );
+
+  /*
+    Three insulators actually mounted
+    to the crossarm.
+  */
+
+  for(const dx of [-.48,0,.48]){
+
+    cylinder(
+      group,
+      .045,
+      .065,
+      .20,
+      0x69635a,
+      x+dx,
+      4.17,
+      z,
+      10
+    );
+
+    sphere(
+      group,
+      .055,
+      0x706b61,
+      x+dx,
+      4.29,
+      z
+    );
+  }
+}
+
+utilityPole(
+  room4,
+  4.65,
+  -9
+);
+
+utilityPole(
+  room4,
+  4.65,
+  9
+);
+
+/*
+  Wires run along the street direction,
+  connecting the two poles through the
+  three insulators.
+*/
+
+for(const dx of [-.48,0,.48]){
+
+  lineBetween(
+    room4,
+    new THREE.Vector3(
+      4.65+dx,
+      4.29,
+      -9
+    ),
+    new THREE.Vector3(
+      4.65+dx,
+      4.29,
+      9
+    ),
+    .014,
+    0x171719
+  );
+}
+
+
+/* =========================================================
+   FIRE HYDRANT
+========================================================= */
+
+cylinder(
+  room4,
+  .14,
+  .16,
+  .65,
+  0x6c3030,
+  -3.95,
+  .33,
+  6.2,
+  16
+);
+
+sphere(
+  room4,
+  .16,
+  0x783333,
+  -3.95,
+  .68,
+  6.2,
+  [1,.7,1]
+);
+
+for(const dz of [-.17,.17]){
+
+  cylinder(
+    room4,
+    .065,
+    .065,
+    .14,
+    0x713333,
+    -3.95,
+    .45,
+    6.2+dz,
+    12,
+    0,
+    0,
+    Math.PI/2
+  );
+}
+
+
+/* =========================================================
+   LOBBY 4 PAINTINGS — 24
+========================================================= */
+
+let n4=1;
+
+/*
+  Paintings become part of the architecture:
+  house-like wall displays rather than random
+  floating pictures.
+*/
+
+for(const z of [-10.95,10.95]){
+
+  const ry=z<0?0:Math.PI;
+
+  for(const x of [-6,-4.5,-3,-1.5,1.5,3,4.5,6]){
+
+    createPainting({
+      x,
+      y:3.55,
+      z,
+      ry,
+      label:"Street "+n4++,
+      hue:195+(n4*8)%50,
+      w:1.05,
+      h:.72,
+      story:
+        "A quiet street, a familiar house, and the feeling that something happened here."
+    },room4);
+  }
+}
+
+for(const x of [-7.0,7.0]){
+
+  const ry=
+    x<0
+    ?Math.PI/2
+    :-Math.PI/2;
+
+  for(const z of [-9,-3,3,9]){
+
+    createPainting({
+      x,
+      y:3.55,
+      z,
+      ry,
+      label:"Neighborhood "+n4++,
+      hue:210+(n4*9)%40,
+      w:1.0,
+      h:.7,
+      story:
+        "One of those ordinary residential moments that somehow feels strangely nostalgic."
+    },room4);
+  }
+}
+
+
+/* =========================================================
+   LOBBY 5 — ABANDONED VICTORIAN ROOM
+========================================================= */
+
+const lobby5={
+  number:5,
+  side:-1,
+  z:118,
+  wall:0x302629,
+  floor:0x211719,
+  ceiling:0x100d10,
+  light:0x879bb0,
+  intensity:.48,
+  flicker:"flicker",
+  neon:0xb5d9ff
+};
+
+const room5=createRoom(lobby5);
+
+room5.userData.theme="abandoned Victorian";
+
+
+/* Old rug */
+
+rug(
+  room5,
+  -1,
   0,
-  4.05,
+  7.2,
+  5.4,
+  0x302126
+);
+
+
+/* Old cabinet */
+
+box(
+  room5,
+  2.4,
+  1.95,
+  .72,
+  0x39251e,
+  -6.55,
+  1.02,
+  -3.8
+);
+
+box(
+  room5,
+  2.05,
+  .92,
+  .06,
+  0x251713,
+  -6.55,
+  1.02,
+  -3.42
+);
+
+for(const z of [-4.1,-3.5]){
+
+  sphere(
+    room5,
+    .035,
+    0x8c704c,
+    -6.55,
+    1.05,
+    z,
+    [1,1,1],
+    {metalness:.7}
+  );
+}
+
+
+/* Grandfather clock */
+
+box(
+  room5,
+  .62,
+  3.45,
+  .42,
+  0x3a241d,
+  5.65,
+  1.75,
+  -5.4
+);
+
+box(
+  room5,
+  .48,
+  1.5,
+  .06,
+  0x171114,
+  5.65,
+  2.45,
+  -5.17
+);
+
+const pendulum=
+  new THREE.Group();
+
+pendulum.position.set(
+  5.65,
+  1.5,
+  -5.12
+);
+
+room5.add(pendulum);
+
+cylinder(
+  pendulum,
+  .025,
+  .025,
+  .95,
+  0x9b815b,
+  0,
+  .45,
   0,
   8
 );
 
 sphere(
-  L5,
-  .17,
-  0xff3035,
+  pendulum,
+  .14,
+  0xa78a5d,
   0,
-  3.35,
+  -.05,
   0,
-  [1,1,1],
-  {
-    emissive:0xff1010,
-    emissiveIntensity:3
-  }
+  [1,1,.5],
+  {metalness:.65}
 );
 
-const redLight =
-  new THREE.PointLight(
-    0xff2222,
-    .75,
-    8
-  );
-
-redLight.position.set(
-  0,
-  3.3,
-  0
-);
-
-L5.add(redLight);
-
-flickerLights.push({
-  light:redLight,
-  base:.75,
-  mode:'strobe'
-});
+pendulums.push(pendulum);
 
 
-/* ============================================================
-   END OF HALL
-============================================================ */
+/* Rocking chair */
 
 box(
-  scene,
-  HALL_HALF*2-.1,
-  3.9,
-  .22,
-  0x291414,
-  0,
-  1.95,
-  HALL_LENGTH-.12
+  room5,
+  1.1,
+  .18,
+  1.2,
+  0x51372d,
+  2.6,
+  .55,
+  3.1
 );
 
-const exitDoor =
+box(
+  room5,
+  .15,
+  1.35,
+  1.2,
+  0x4a3028,
+  3.0,
+  1.1,
+  3.1
+);
+
+for(const z of [2.65,3.55]){
+
+  cylinder(
+    room5,
+    .055,
+    .055,
+    .95,
+    0x51372d,
+    2.25,
+    .30,
+    z,
+    10
+  );
+}
+
+
+/* Old trunk */
+
+box(
+  room5,
+  2.2,
+  .62,
+  1.15,
+  0x493027,
+  -.2,
+  .38,
+  5.0
+);
+
+box(
+  room5,
+  2.0,
+  .08,
+  1.0,
+  0x604031,
+  -.2,
+  .72,
+  5.0
+);
+
+
+/* Side table */
+
+table(
+  room5,
+  2.9,
+  -2.9,
+  .9,
+  .9,
+  .72,
+  0x3d2820
+);
+
+
+/* Old radio */
+
+box(
+  room5,
+  .75,
+  .42,
+  .32,
+  0x302522,
+  2.9,
+  1.16,
+  -2.9
+);
+
+box(
+  room5,
+  .42,
+  .20,
+  .025,
+  0x171415,
+  2.9,
+  1.18,
+  -2.71
+);
+
+
+/* Mirror */
+
+const mirror=
   new THREE.Mesh(
     new THREE.PlaneGeometry(
-      1.8,
-      3.15
+      1.15,
+      1.75
     ),
     new THREE.MeshStandardMaterial({
-      map:canvasTexture(
-        (ctx,w,h)=>{
-
-          ctx.fillStyle =
-            '#241313';
-
-          ctx.fillRect(
-            0,0,w,h
-          );
-
-          ctx.strokeStyle =
-            '#714236';
-
-          ctx.lineWidth=14;
-
-          ctx.strokeRect(
-            25,
-            25,
-            w-50,
-            h-50
-          );
-
-          ctx.fillStyle =
-            '#e0b37d';
-
-          ctx.font =
-            '28px Georgia';
-
-          ctx.textAlign =
-            'center';
-
-          ctx.fillText(
-            'EXIT',
-            w/2,
-            h*.55
-          );
-
-        },
-        400,
-        600
-      ),
-      roughness:.75
+      color:0x1d2630,
+      metalness:.7,
+      roughness:.22
     })
   );
 
-exitDoor.position.set(
-  0,
-  1.75,
-  HALL_LENGTH-.25
+mirror.position.set(
+  6.82,
+  2.35,
+  2.6
 );
 
-exitDoor.rotation.y =
-  Math.PI;
+mirror.rotation.y=-Math.PI/2;
 
-scene.add(exitDoor);
+room5.add(mirror);
+
+box(
+  room5,
+  .15,
+  1.98,
+  1.38,
+  0x493127,
+  6.7,
+  2.35,
+  2.6
+);
 
 
-/* ============================================================
-   MOVEMENT
-============================================================ */
+/* Dead plant */
+
+cylinder(
+  room5,
+  .28,
+  .33,
+  .42,
+  0x49342a,
+  -5.7,
+  .21,
+  5.1,
+  14
+);
+
+for(const a of [-.8,-.35,0,.4,.8]){
+
+  lineBetween(
+    room5,
+    new THREE.Vector3(
+      -5.7,
+      .42,
+      5.1
+    ),
+    new THREE.Vector3(
+      -5.7+Math.sin(a)*.7,
+      1.1,
+      5.1+Math.cos(a)*.7
+    ),
+    .025,
+    0x35402e
+  );
+}
+
+
+/* Old window */
+
+windowFrame(
+  room5,
+  0,
+  2.5,
+  11.82,
+  4.5,
+  2.25,
+  0,
+  false
+);
+
+const oldWindowLight=
+  new THREE.PointLight(
+    0x55738c,
+    .18,
+    6
+  );
+
+oldWindowLight.position.set(
+  0,
+  2.5,
+  10.6
+);
+
+room5.add(oldWindowLight);
+
+
+/* Candelabra */
+
+for(const z of [-.35,0,.35]){
+
+  cylinder(
+    room5,
+    .025,
+    .035,
+    .55,
+    0x756044,
+    -1.2,
+    .65,
+    z,
+    10
+  );
+
+  sphere(
+    room5,
+    .055,
+    0xffc778,
+    -1.2,
+    .96,
+    z,
+    [1,.8,1],
+    {
+      emissive:0xffa044,
+      emissiveIntensity:1.5
+    }
+  );
+}
+
+
+/* =========================================================
+   LOBBY 5 PAINTINGS — 20
+========================================================= */
+
+let n5=1;
+
+for(const z of [-10.9,10.9]){
+
+  const ry=z<0?0:Math.PI;
+
+  for(const x of [-5.7,-4.1,-2.5,-.8,.8,2.5,4.1,5.7]){
+
+    createPainting({
+      x,
+      y:2.25,
+      z,
+      ry,
+      label:"Forgotten "+n5++,
+      hue:205+(n5*11)%45,
+      story:
+        "A portrait of somewhere that may never have existed."
+    },room5);
+  }
+}
+
+for(const z of [-8,-5.5,5.5,8]){
+
+  createPainting({
+    x:-6.88,
+    y:2.25,
+    z,
+    ry:Math.PI/2,
+    label:"Echo "+n5++,
+    hue:215+(n5*8)%35,
+    story:
+      "The room remembers more than the people who lived in it."
+  },room5);
+}
+
+
+/* =========================================================
+   EXTRA ROOM DETAILS:
+   CEILING LIGHTS / PRACTICAL GLOW
+========================================================= */
+
+function roomPendant(group,x,z,color=0xffc17c){
+
+  cylinder(
+    group,
+    .025,
+    .025,
+    .65,
+    0x4b3a30,
+    x,
+    4.45,
+    z,
+    10
+  );
+
+  sphere(
+    group,
+    .12,
+    color,
+    x,
+    4.08,
+    z,
+    [1,.8,1],
+    {
+      emissive:color,
+      emissiveIntensity:1.8
+    }
+  );
+
+  const light=
+    new THREE.PointLight(
+      color,
+      .24,
+      5
+    );
+
+  light.position.set(
+    x,
+    4.05,
+    z
+  );
+
+  group.add(light);
+}
+
+
+/*
+  These are deliberately subtle —
+  they make the rooms feel inhabited
+  rather than lit by invisible game lights.
+*/
+
+roomPendant(room1,1.5,-5);
+roomPendant(room1,1.5,5);
+
+roomPendant(room2,2,0,0xaad9ff);
+
+roomPendant(room3,2.2,4,0xffc27e);
+roomPendant(room3,2.2,-4,0xffc27e);
+
+roomPendant(room4,-1,6,0x9cc9e5);
+roomPendant(room4,1,-6,0x9cc9e5);
+
+roomPendant(room5,-1,-4,0x91a5b9);
+roomPendant(room5,1,4,0x91a5b9);
+
+
+/* =========================================================
+   END WALL
+========================================================= */
+
+box(
+  scene,
+  HALL_HALF*2,
+  ROOM_H,
+  .20,
+  0x1d1518,
+  0,
+  ROOM_H/2,
+  HALL_LENGTH
+);
+
+
+/* =========================================================
+   ROOM REGISTRY
+========================================================= */
 
 window._rooms=rooms;
 window._camera=camera;
+
+
+/* =========================================================
+   MOVEMENT
+========================================================= */
 
 let yaw=Math.PI;
 let pitch=0;
@@ -5867,25 +4769,26 @@ let pitch=0;
 const keys={};
 
 document.addEventListener(
-  'keydown',
+  "keydown",
   e=>{
     keys[e.code]=true;
   }
 );
 
 document.addEventListener(
-  'keyup',
+  "keyup",
   e=>{
     keys[e.code]=false;
   }
 );
 
 dom.addEventListener(
-  'click',
+  "click",
   ()=>{
     if(
       gameStarted &&
-      document.pointerLockElement!==dom
+      document.pointerLockElement!==dom &&
+      $("noteOverlay").style.display!=="flex"
     ){
       dom.requestPointerLock();
     }
@@ -5893,42 +4796,38 @@ dom.addEventListener(
 );
 
 document.addEventListener(
-  'mousemove',
+  "mousemove",
   e=>{
 
     if(
       document.pointerLockElement!==dom
-    )
-      return;
+    )return;
 
-    yaw -=
-      e.movementX*.0022;
+    yaw-=e.movementX*.0022;
 
-    pitch -=
-      e.movementY*.0022;
+    pitch-=e.movementY*.0022;
 
-    pitch =
-      Math.max(
-        -1.2,
-        Math.min(
-          1.2,
-          pitch
-        )
-      );
+    pitch=Math.max(
+      -1.2,
+      Math.min(
+        1.2,
+        pitch
+      )
+    );
   }
 );
 
+
+/*
+  These limits keep the player inside
+  the complete architecture.
+*/
+
 const LIMIT={
-  xMin:
-    -(HALL_HALF+ROOM_W-.35),
-
-  xMax:
-    HALL_HALF+ROOM_W-.35,
-
+  xMin:-(HALL_HALF+ROOM_W-.38),
+  xMax:HALL_HALF+ROOM_W-.38,
   zMin:1,
-
-  zMax:
-    HALL_LENGTH-1
+  zMax:HALL_LENGTH-1
 };
 
 function updateMovement(dt){
@@ -5937,302 +4836,153 @@ function updateMovement(dt){
     pitch,
     yaw,
     0,
-    'YXZ'
+    "YXZ"
   );
 
-  const speed =
-    3.2*dt;
+  const speed=3.2*dt;
 
-  const fwd =
+  const forward=
     new THREE.Vector3(
       -Math.sin(yaw),
       0,
       -Math.cos(yaw)
     );
 
-  const right =
+  const right=
     new THREE.Vector3(
       Math.cos(yaw),
       0,
       -Math.sin(yaw)
     );
 
-  let mv =
+  const movement=
     new THREE.Vector3();
 
-  if(keys['KeyW'])
-    mv.add(fwd);
+  if(keys["KeyW"])
+    movement.add(forward);
 
-  if(keys['KeyS'])
-    mv.sub(fwd);
+  if(keys["KeyS"])
+    movement.sub(forward);
 
-  if(keys['KeyD'])
-    mv.add(right);
+  if(keys["KeyD"])
+    movement.add(right);
 
-  if(keys['KeyA'])
-    mv.sub(right);
+  if(keys["KeyA"])
+    movement.sub(right);
 
-  if(mv.length()>0){
+  if(movement.length()>0){
 
-    mv
+    movement
       .normalize()
       .multiplyScalar(speed);
 
-    camera.position.x =
+    camera.position.x=
       Math.max(
         LIMIT.xMin,
         Math.min(
           LIMIT.xMax,
-          camera.position.x+mv.x
+          camera.position.x+movement.x
         )
       );
 
-    camera.position.z =
+    camera.position.z=
       Math.max(
         LIMIT.zMin,
         Math.min(
           LIMIT.zMax,
-          camera.position.z+mv.z
+          camera.position.z+movement.z
         )
       );
 
     footstepTick(dt);
   }
 
-  const near =
-    rooms.reduce(
-      (a,r)=>
-        Math.abs(
-          r.z-camera.position.z
-        )
-        <
-        Math.abs(
-          a.z-camera.position.z
-        )
-          ? r
-          : a,
-      rooms[0]
-    );
+  /*
+    Room label.
+  */
 
-  const lbl =
-    $('roomLabel');
+  if(rooms.length){
 
-  if(
-    Math.abs(
-      near.z-camera.position.z
-    )<8
-  ){
+    const nearest=
+      rooms.reduce(
+        (a,r)=>
+          Math.abs(
+            r.z-camera.position.z
+          ) <
+          Math.abs(
+            a.z-camera.position.z
+          )
+          ?r
+          :a,
+        rooms[0]
+      );
 
-    lbl.style.opacity=1;
+    const label=$("roomLabel");
 
-    lbl.textContent =
-      near.tag;
+    if(
+      Math.abs(
+        nearest.z-camera.position.z
+      )<8
+    ){
 
-  }else{
+      label.style.opacity=1;
+      label.textContent=nearest.tag;
 
-    lbl.style.opacity=0;
+    }else{
+
+      label.style.opacity=0;
+    }
   }
 }
 
 
-/* ============================================================
-   ANIMATION
-============================================================ */
+/* =========================================================
+   ROOM LOOKUP
+========================================================= */
 
-function animateWorld(t){
+function currentRoom(){
 
-  const time =
-    t*.001;
+  if(
+    !window._rooms ||
+    !window._camera
+  )return null;
 
-
-  /* lights */
-
-  flickerLights.forEach(
-    item=>{
-
-      const l =
-        item.light;
-
-      if(
-        item.mode==='flicker'
-      ){
-
-        l.intensity =
-          item.base*
-          (
-            .78+
-            Math.random()*.28
-          );
-
-      }else if(
-        item.mode==='ember'
-      ){
-
-        l.intensity =
-          item.base*
-          (
-            .84+
-            Math.sin(time*7)*.07+
-            Math.random()*.07
-          );
-
-      }else if(
-        item.mode==='lamp'
-      ){
-
-        l.intensity =
-          item.base*
-          (
-            .96+
-            Math.sin(time*1.6)*.035
-          );
-
-      }else if(
-        item.mode==='strobe'
-      ){
-
-        l.intensity =
-          item.base*
-          (
-            Math.random()>.97
-              ? .18
-              : .92
-          );
-
-      }else{
-
-        l.intensity =
-          item.base*
-          (
-            .98+
-            Math.sin(time*1.2)*.02
-          );
-      }
-    }
-  );
-
-
-  /* snow */
-
-  snowParticles.forEach(
-    p=>{
-
-      p.position.y -= .009;
-
-      p.position.x +=
-        Math.sin(
-          time*1.2+
-          p.position.z
-        )*.0007;
-
-      if(
-        p.position.y<.04
+  return window._rooms.reduce(
+    (a,r)=>
+      Math.abs(
+        r.z-window._camera.position.z
+      ) <
+      Math.abs(
+        a.z-window._camera.position.z
       )
-        p.position.y=4.75;
-    }
-  );
-
-
-  /* rain */
-
-  rainParticles.forEach(
-    p=>{
-
-      p.position.y -= .06;
-
-      if(
-        p.position.y<.04
-      )
-        p.position.y=4.65;
-    }
-  );
-
-
-  /* fire */
-
-  fireMeshes.forEach(
-    f=>{
-
-      f.scale.y =
-        1.35+
-        Math.sin(time*8)*.12+
-        Math.sin(time*13)*.08;
-
-      f.rotation.z =
-        Math.sin(time*5)*.08;
-    }
-  );
-
-
-  /* pendulum */
-
-  pendulums.forEach(
-    p=>{
-
-      p.rotation.z =
-        Math.sin(time*1.7)*.18;
-    }
-  );
-
-
-  /* beam */
-
-  animatedObjects.forEach(
-    item=>{
-
-      if(
-        item.type==='beam'
-      ){
-
-        item.object.material.opacity =
-          .025+
-          Math.sin(time*2.2)*.007;
-      }
-
-      if(
-        item.type==='carLight'
-      ){
-
-        item.object.intensity =
-          item.base+
-          Math.sin(time*2)*.025;
-      }
-
-      /*
-         Door remains physically open,
-         with an extremely subtle movement
-         rather than disappearing.
-      */
-
-      if(
-        item.type==='door'
-      ){
-
-        item.object.rotation.y =
-          item.base+
-          Math.sin(time*.45)*.008;
-      }
-    }
+      ?r
+      :a,
+    window._rooms[0]
   );
 }
 
 
-/* ============================================================
+/* =========================================================
    PAINTING CLICK
-============================================================ */
+========================================================= */
 
-const raycaster =
+const raycaster=
   new THREE.Raycaster();
 
-const mouse =
+const mouse=
   new THREE.Vector2();
 
 dom.addEventListener(
-  'mousedown',
+  "mousedown",
   e=>{
 
-    if(!gameStarted)
-      return;
+    if(!gameStarted)return;
+
+    /*
+      Crosshair interaction:
+      the painting directly beneath
+      the center of the screen is selected.
+    */
 
     mouse.x=0;
     mouse.y=0;
@@ -6242,7 +4992,7 @@ dom.addEventListener(
       camera
     );
 
-    const hits =
+    const hits=
       raycaster.intersectObjects(
         clickable,
         false
@@ -6258,15 +5008,197 @@ dom.addEventListener(
 );
 
 
-/* ============================================================
+/* =========================================================
+   NOTE
+========================================================= */
+
+function openNote(data){
+
+  if(dom){
+    document.exitPointerLock();
+  }
+
+  const boxEl=$("noteBox");
+
+  boxEl.classList.toggle(
+    "win",
+    !!data.winner
+  );
+
+  $("noteTitle").textContent=
+    data.winner
+    ? "🎉 You found a free print!"
+    : (data.label||"Untitled");
+
+  $("noteBody").textContent=
+    data.story ||
+    "A quiet piece from the gallery.";
+
+  $("noteOverlay").style.display="flex";
+}
+
+
+/* =========================================================
+   WORLD ANIMATION
+========================================================= */
+
+function animateWorld(t){
+
+  const time=t*.001;
+
+  /*
+    Practical lights subtly breathe.
+    No violent random flashing.
+  */
+
+  flickerLights.forEach(item=>{
+
+    const light=item.light;
+
+    if(item.mode==="flicker"){
+
+      light.intensity=
+        item.base*
+        (
+          .78+
+          Math.random()*.22
+        );
+
+    }else if(item.mode==="ember"){
+
+      light.intensity=
+        item.base*
+        (
+          .86+
+          Math.sin(time*8)*.07+
+          Math.random()*.07
+        );
+
+    }else if(item.mode==="lamp"){
+
+      light.intensity=
+        item.base*
+        (
+          .96+
+          Math.sin(time*1.6)*.035
+        );
+
+    }else{
+
+      light.intensity=
+        item.base*
+        (
+          .98+
+          Math.sin(time*1.3)*.018
+        );
+    }
+  });
+
+
+  /*
+    Snow.
+  */
+
+  snowParticles.forEach(p=>{
+
+    const obj=p.object;
+
+    obj.position.y-=.008;
+
+    obj.position.x+=
+      Math.sin(
+        time*1.3+
+        obj.position.z
+      )*.0008;
+
+    if(obj.position.y<.08){
+
+      obj.position.y=
+        4.7;
+    }
+  });
+
+
+  /*
+    Rain.
+  */
+
+  rainParticles.forEach(p=>{
+
+    const obj=p.object;
+
+    obj.position.y-=.075;
+
+    if(obj.position.y<.12){
+
+      obj.position.y=
+        4.55;
+    }
+  });
+
+
+  /*
+    Fire.
+  */
+
+  fireMeshes.forEach((f,i)=>{
+
+    f.scale.y=
+      1.25+
+      Math.sin(
+        time*8+i
+      )*.13+
+      Math.sin(
+        time*13+i*2
+      )*.07;
+
+    f.rotation.z=
+      Math.sin(
+        time*5+i
+      )*.06;
+  });
+
+
+  /*
+    Grandfather clock.
+  */
+
+  pendulums.forEach(p=>{
+
+    p.rotation.z=
+      Math.sin(
+        time*1.75
+      )*.16;
+  });
+
+
+  /*
+    Cinema projector beam.
+  */
+
+  movingLights.forEach(item=>{
+
+    if(item.type==="beam"){
+
+      item.object.material.opacity=
+        .022+
+        Math.sin(
+          time*2.1
+        )*.006;
+    }
+  });
+}
+
+
+/* =========================================================
    RESIZE
-============================================================ */
+========================================================= */
 
 window.addEventListener(
-  'resize',
+  "resize",
   ()=>{
 
-    camera.aspect =
+    camera.aspect=
       innerWidth/innerHeight;
 
     camera.updateProjectionMatrix();
@@ -6279,24 +5211,24 @@ window.addEventListener(
 );
 
 
-/* ============================================================
+/* =========================================================
    MAIN LOOP
-============================================================ */
+========================================================= */
 
 function animate(t){
 
-  requestAnimationFrame(
-    animate
-  );
+  requestAnimationFrame(animate);
 
-  const dt =
+  const dt=
     Math.min(
       clock.getDelta(),
       .05
     );
 
-  if(gameStarted)
+  if(gameStarted){
+
     updateMovement(dt);
+  }
 
   animateWorld(t);
 
