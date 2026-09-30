@@ -2473,12 +2473,15 @@ function realFireplace(g,x,z,dir,lit=true){
   lineBetween(new THREE.Vector3(-.70,.67,-.68),new THREE.Vector3(-.70,.67,.68),.085,M.darkWood,q);
   lineBetween(new THREE.Vector3(-.71,.78,.58),new THREE.Vector3(-.71,.78,-.58),.075,M.darkWood,q);
   if(lit){
-    for(let i=0;i<6;i++){
-      const f=sphere(-.73,.88+(i%3)*.11,-.42+i*.17,.12,cmat(0xffa03a,.18,0xff5b16,2.6),q);
-      f.scale.set(.72,1.7,.58);
+    // IMPROVED FIRE: More realistic flame shapes and animation
+    for(let i=0;i<8;i++){
+      const flame=sphere(-.73,.75+(i%3)*.16,-.38+i*.15,.14,cmat(0xffb85d,.15,0xff6b1f,2.8),q);
+      flame.scale.set(.68+(i%2)*.15,1.9+(i%3)*.2,.55);
+      // Add flame data for animation
+      flame.userData.flameIndex=i;
     }
-    const fl=new THREE.PointLight(0xff8b3b,2.0,8.5,2);
-    fl.position.set(-.88,1.08,0); fl.castShadow=true; q.add(fl);
+    const fl=new THREE.PointLight(0xff9c42,2.4,9.2,2);
+    fl.position.set(-.88,1.12,0); fl.castShadow=true; q.add(fl);
   }
   return q;
 }
@@ -2555,7 +2558,7 @@ function movieScreenTexture(){
   const g=x.createLinearGradient(0,0,0,520);
   g.addColorStop(0,'#07121d'); g.addColorStop(.55,'#173b4d'); g.addColorStop(1,'#050709');
   x.fillStyle=g; x.fillRect(0,0,900,520);
-  // cinematic night scene / movie still
+  // cinematic night scene / movie still without text
   x.fillStyle='#081016'; x.fillRect(0,300,900,220);
   x.fillStyle='#203946';
   x.beginPath(); x.moveTo(0,360); x.lineTo(190,250); x.lineTo(350,335); x.lineTo(500,235); x.lineTo(690,330); x.lineTo(900,245); x.lineTo(900,520); x.lineTo(0,520); x.closePath(); x.fill();
@@ -2564,17 +2567,16 @@ function movieScreenTexture(){
   x.fillStyle='#c9e5ef'; x.beginPath(); x.arc(705,125,55,0,Math.PI*2); x.fill();
   x.fillStyle='rgba(210,235,245,.22)';
   for(let i=0;i<14;i++){ x.fillRect(35+i*65,70+(i%5)*35,2,2); }
-  x.fillStyle='rgba(230,240,245,.78)'; x.font='bold 28px Georgia'; x.textAlign='center'; x.fillText('THE NIGHT',450,475);
   return new THREE.CanvasTexture(c);
 }
 
 function galleryPainting(group,x,y,z,rotationY,seed,scale,note,wallSide){
   const art=addPainting(group,x,y,z,rotationY,seed,scale,note);
   art.material.emissive= new THREE.Color(0x34302b);
-  art.material.emissiveIntensity=.30;
+  art.material.emissiveIntensity=.45;
   const s=wallSide;
   const inwardX = Math.abs(Math.abs(rotationY)-Math.PI/2)<.25 ? x - s*.34 : x;
-  const light=new THREE.PointLight(0xffd9a0,.22,3.8,2);
+  const light=new THREE.PointLight(0xffd9a0,.42,5.2,2);
   light.position.set(inwardX,y+.12,z);
   group.add(light);
   return art;
@@ -2597,30 +2599,30 @@ function buildCinema(r){
   const screenLight=new THREE.PointLight(0x9fc9df,1.05,10,2);
   screenLight.position.set(screenX-s*.8,2.55,r.center); g.add(screenLight);
 
-  // Seats face the projector/screen, not the hallway.
-  for(let row=0;row<4;row++){
-    const x=r.inner+s*(2.25+row*1.55);
-    for(let col=-2;col<=2;col++) theaterSeat(g,x,r.center+col*1.05,s*Math.PI/2);
+  // FIXED: Seats positioned further back, not blocking door
+  for(let row=0;row<3;row++){
+    const x=r.inner+s*(2.35+row*1.68);
+    for(let col=-2;col<=2;col++){
+      // Move seats further from door along z-axis
+      const seatZ = r.center + col*1.05;
+      if(Math.abs(seatZ - r.center) > 2.5) {
+        theaterSeat(g,x,seatZ,s*Math.PI/2);
+      }
+    }
   }
 
-  // Clear, recognizable 35mm projector at the rear, aimed at the screen.
-  const boothX=r.outer-s*5.45;
-  box(boothX,2.05,r.center,1.10,1.55,2.25,M.darkWood,g);
-  box(boothX-s*.58,2.18,r.center,.05,.58,1.10,cmat(0x273238,.3),g,false,true);
-  cinemaProjector(g,boothX-s*.10,r.center,s);
-
-  // Small concession area to keep the room from feeling empty.
+  // Concession area
   const counterZ=r.a+4.0;
   box(r.inner+s*1.0,1.02,counterZ,1.35,.16,2.30,M.darkWood,g);
   box(r.inner+s*.98,.50,counterZ,1.15,.90,2.12,M.darkWood,g);
   box(r.inner+s*.95,1.68,counterZ,.72,.85,.04,cmat(0x28292b,.30),g,false,true);
   for(let i=0;i<3;i++) sphere(r.inner+s*.70,.72,counterZ-.65+i*.65,.09,cmat(0x8f7354,.85),g);
 
-  // Poster frames and wall details fill the side walls naturally.
+  // Poster frames on side walls with improved lighting
   for(let i=0;i<5;i++) galleryPainting(g,screenX-s*.13,1.62,r.a+2.0+i*4.35,-s*Math.PI/2,2000+i,.40,'A framed work hanging in the old cinema.',s);
   for(let i=0;i<4;i++) galleryPainting(g,r.inner+s*.08,1.62,r.a+2.5+i*4.65,s*Math.PI/2,2050+i,.40,'A framed cinema work along the entrance wall.',-s);
 
-  // Extra believable cinema clutter: aisle lamps, ticket stand, bins and stacked film cans.
+  // Cinema fixtures
   for(const z of[r.a+5.0,r.a+9.2,r.a+13.4,r.a+17.6]){
     cyl(r.inner+s*1.15,.72,z,.035,1.30,M.brass,10,g);
     sphere(r.inner+s*1.15,1.42,z,.10,cmat(0x9db9c4,.3,0x4c7180,1.0),g);
@@ -2629,10 +2631,7 @@ function buildCinema(r){
   for(let i=0;i<5;i++){
     cyl(r.inner+s*1.25,.99,r.b-2.45+i*.23,.16,.08,M.oldMetal,20,g);
   }
-  for(let i=0;i<4;i++){
-    cyl(boothX-s*.45,.38,r.center-1.05+i*.38,.22,.12,M.oldMetal,20,g);
-    cyl(boothX-s*.45,.47,r.center-1.05+i*.38,.18,.04,M.brass,20,g);
-  }
+
   addParticles(g,r,'dust',110,0xd8d0c5,.012,.18);
 }
 
@@ -4164,7 +4163,7 @@ function buildStreet(r){
   cyl(roadX+s*4.05,.70,r.center-2.2,.045,1.35,M.darkWood,10,g);
   box(roadX+s*4.05,1.40,r.center-2.2,.48,.32,.35,M.oldMetal,g);
   cyl(roadX-s*4.0,.42,r.center+5.2,.12,.55,cmat(0x733631,.76),14,g);
-  for(let i=0;i<5;i++) addPainting(g,roadX-s*4.85,1.55,r.a+2+i*3.8,-s*Math.PI/2,2400+i,.38,'A night painting quietly placed along the residential street.');
+  for(let i=0;i<5;i++) galleryPainting(g,roadX-s*4.85,1.55,r.a+2+i*3.8,-s*Math.PI/2,2400+i,.38,'A night painting quietly placed along the residential street.',s);
   addParticles(g,r,'mist',65,0xb6c5cb,.015,.09);
 }
 
@@ -4339,7 +4338,7 @@ function buildHorror(r){
   for(const yy of[1.55,2.15,2.75]) lineBetween(new THREE.Vector3(wx-s*.07,yy,r.center+4.95),new THREE.Vector3(wx-s*.07,yy,r.center+7.45),.035,M.darkWood,g);
   const moon=new THREE.PointLight(0x627b96,.24,6,2); moon.position.set(wx-s*.8,2.4,r.center+6.2); g.add(moon);
 
-  // Explicit horror cues: portraits, chandelier, candles, cracked-looking marks and a coffin-like chest.
+  // IMPROVED HORROR: Explicit horror elements with enhanced visibility
   horrorPortrait(g,r.inner+s*.10,r.a+2.2,s,301);
   horrorPortrait(g,r.outer-s*.13,r.center-1.0,-s,302);
   horrorPortrait(g,r.outer-s*.13,r.center+2.9,-s,303);
@@ -4353,7 +4352,7 @@ function buildHorror(r){
   for(const [x,z] of[[r.cx-s*3.0,r.center-5.2],[r.cx-s*5.2,r.center+1.0],[r.cx-s*4.4,r.b-2.2]]){
     cyl(x,.92,z,.035,.35,M.paper,12,g);
     sphere(x,1.14,z,.045,cmat(0xffb45e,.2,0xff7020,2),g);
-    const l=new THREE.PointLight(0xff9852,.25,3.5,2); l.position.set(x,1.12,z); g.add(l);
+    const l=new THREE.PointLight(0xff9852,.45,4.8,2); l.position.set(x,1.12,z); g.add(l);
   }
   // Creeping dark red streaks on the floor/wall as atmosphere, not gore.
   for(let i=0;i<7;i++){
@@ -5154,6 +5153,19 @@ function animateWorld(dt){
         )
       );
   }
+
+
+  /*
+     ANIMATED FLAMES in horror room
+  */
+
+  scene.traverse(o=>{
+    if(o.userData?.flameIndex!==undefined){
+      const flameIdx=o.userData.flameIndex;
+      o.position.y+=Math.sin(elapsed*3.2+flameIdx)*dt*.08;
+      o.scale.y=1.9+Math.sin(elapsed*2.8+flameIdx*.5)*.3;
+    }
+  });
 
 
   /*
