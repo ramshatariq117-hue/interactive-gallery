@@ -2433,30 +2433,22 @@ function makeBlueMaterial(color, roughness=0.92){
 
 function cinemaProjector(g,x,z,dir){
   const q=new THREE.Group();
-  q.position.set(x,2.95,z);
+  q.position.set(x,2.62,z);
   q.rotation.y=dir>0?0:Math.PI;
+  q.scale.set(.62,.62,.62);
   g.add(q);
-
   box(0,0,0,.92,.52,.72,M.oldMetal,q);
   box(.02,-.02,0,.98,.08,.78,M.darkWood,q);
-
-  // unmistakable projection lens
   cyl(.58,0,0,.18,.28,M.brass,24,q,{z:Math.PI/2});
   cyl(.73,0,0,.10,.14,cmat(0x172127,.4,0x8eb7cf,1.8),24,q,{z:Math.PI/2});
-
-  // two film reels on the side
   for(const y of[-.38,.38]){
     cyl(-.05,y,.42,.25,.09,M.oldMetal,28,q,{x:Math.PI/2});
     cyl(-.05,y,.48,.07,.095,M.brass,20,q,{x:Math.PI/2});
   }
-
-  // support column and base
   cyl(0,-.47,0,.08,.62,M.darkWood,12,q);
   box(0,-.80,0,.75,.08,.62,M.darkWood,q);
-
-  const glow=new THREE.PointLight(0x9bc8e5,.65,7,2);
-  glow.position.set(dir*.72,0,0);
-  q.add(glow);
+  const glow=new THREE.PointLight(0x9bc8e5,.38,5,2);
+  glow.position.set(dir*.72,0,0); q.add(glow);
 }
 
 function realFireplace(g,x,z,dir,lit=true){
@@ -2464,32 +2456,29 @@ function realFireplace(g,x,z,dir,lit=true){
   q.position.set(x,0,z);
   q.rotation.y=dir>0?0:Math.PI;
   g.add(q);
-
-  // chimney breast
-  box(0,1.72,0,.55,3.45,5.35,brick(131),q);
-  // raised stone surround, with actual open cavity
-  box(.31,1.52,-1.92,.16,2.05,.46,M.stone,q);
-  box(.31,1.52,1.92,.16,2.05,.46,M.stone,q);
-  box(.31,2.48,0,.16,.38,4.35,M.stone,q);
-  box(.31,.43,0,.20,.28,4.70,M.stone,q);
-  box(.32,1.42,0,.12,1.72,3.30,cmat(0x08090a,1),q,false,true);
-
-  // mantel shelf
-  box(.42,2.72,0,.26,.18,5.55,M.darkWood,q);
-  box(.46,2.87,0,.18,.10,5.20,M.stone,q);
-
-  // logs + visible fire
-  lineBetween(new THREE.Vector3(.42,.62,-.72),new THREE.Vector3(.42,.70,.70),.075,M.darkWood,q);
-  lineBetween(new THREE.Vector3(.43,.70,.64),new THREE.Vector3(.43,.60,-.62),.075,M.darkWood,q);
+  // Substantial chimney breast with a readable masonry silhouette.
+  box(0,1.95,0,.72,3.9,4.55,brick(131),q);
+  // Deep black firebox opening, inset behind the stone surround.
+  box(-.43,1.42,0,.10,1.72,2.75,cmat(0x070707,1),q,false,true);
+  // Stone jambs, lintel and hearth.
+  box(-.50,1.42,-1.55,.24,1.92,.34,M.stone,q);
+  box(-.50,1.42,1.55,.24,1.92,.34,M.stone,q);
+  box(-.50,2.38,0,.24,.34,3.45,M.stone,q);
+  box(-.57,.20,0,.42,.22,3.95,M.stone,q);
+  // Heavy wooden mantel.
+  box(-.58,2.70,0,.34,.20,4.35,M.darkWood,q);
+  box(-.60,2.84,0,.20,.10,4.05,M.stone,q);
+  // Fire grate and crossed logs.
+  for(const zz of[-.55,0,.55]) cyl(-.64,.55,zz,.045,.95,M.oldMetal,12,q,{x:Math.PI/2});
+  lineBetween(new THREE.Vector3(-.70,.67,-.68),new THREE.Vector3(-.70,.67,.68),.085,M.darkWood,q);
+  lineBetween(new THREE.Vector3(-.71,.78,.58),new THREE.Vector3(-.71,.78,-.58),.075,M.darkWood,q);
   if(lit){
-    for(let i=0;i<5;i++){
-      const f=sphere(.46,.88+(i%3)*.10,-.45+i*.22,.13-(i%2)*.02,cmat(0xff9b38,.20,0xff5d16,2.4),q);
-      f.scale.set(.7,1.65,.55);
+    for(let i=0;i<6;i++){
+      const f=sphere(-.73,.88+(i%3)*.11,-.42+i*.17,.12,cmat(0xffa03a,.18,0xff5b16,2.6),q);
+      f.scale.set(.72,1.7,.58);
     }
-    const fl=new THREE.PointLight(0xff8b3b,1.9,8.5,2);
-    fl.position.set(.62,1.05,0);
-    fl.castShadow=true;
-    q.add(fl);
+    const fl=new THREE.PointLight(0xff8b3b,2.0,8.5,2);
+    fl.position.set(-.88,1.08,0); fl.castShadow=true; q.add(fl);
   }
   return q;
 }
@@ -2559,6 +2548,38 @@ function hangingChandelier(g,x,z){
 }
 
 
+function movieScreenTexture(){
+  const c=document.createElement('canvas');
+  c.width=900; c.height=520;
+  const x=c.getContext('2d');
+  const g=x.createLinearGradient(0,0,0,520);
+  g.addColorStop(0,'#07121d'); g.addColorStop(.55,'#173b4d'); g.addColorStop(1,'#050709');
+  x.fillStyle=g; x.fillRect(0,0,900,520);
+  // cinematic night scene / movie still
+  x.fillStyle='#081016'; x.fillRect(0,300,900,220);
+  x.fillStyle='#203946';
+  x.beginPath(); x.moveTo(0,360); x.lineTo(190,250); x.lineTo(350,335); x.lineTo(500,235); x.lineTo(690,330); x.lineTo(900,245); x.lineTo(900,520); x.lineTo(0,520); x.closePath(); x.fill();
+  x.fillStyle='#101b20'; x.fillRect(370,265,145,150);
+  x.fillStyle='#d6a45e'; x.fillRect(395,300,32,55); x.fillRect(450,300,32,55);
+  x.fillStyle='#c9e5ef'; x.beginPath(); x.arc(705,125,55,0,Math.PI*2); x.fill();
+  x.fillStyle='rgba(210,235,245,.22)';
+  for(let i=0;i<14;i++){ x.fillRect(35+i*65,70+(i%5)*35,2,2); }
+  x.fillStyle='rgba(230,240,245,.78)'; x.font='bold 28px Georgia'; x.textAlign='center'; x.fillText('THE NIGHT',450,475);
+  return new THREE.CanvasTexture(c);
+}
+
+function galleryPainting(group,x,y,z,rotationY,seed,scale,note,wallSide){
+  const art=addPainting(group,x,y,z,rotationY,seed,scale,note);
+  art.material.emissive= new THREE.Color(0x34302b);
+  art.material.emissiveIntensity=.30;
+  const s=wallSide;
+  const inwardX = Math.abs(Math.abs(rotationY)-Math.PI/2)<.25 ? x - s*.34 : x;
+  const light=new THREE.PointLight(0xffd9a0,.22,3.8,2);
+  light.position.set(inwardX,y+.12,z);
+  group.add(light);
+  return art;
+}
+
 function buildCinema(r){
   const g=r.g, s=r.side;
   const floor=new THREE.MeshStandardMaterial({map:carpet(41,'#302329'),roughness:1});
@@ -2566,7 +2587,8 @@ function buildCinema(r){
 
   const screenX=r.outer-s*.20;
   box(screenX,2.62,r.center,.18,3.12,5.55,M.darkWood,g);
-  box(screenX-s*.11,2.63,r.center,.035,2.62,4.95,cmat(0xb4c4ca,.82,0x425762,.20),g,false,true);
+  const movie=new THREE.Mesh(new THREE.PlaneGeometry(4.95,2.62),new THREE.MeshStandardMaterial({map:movieScreenTexture(),roughness:.82,emissive:0x182a31,emissiveIntensity:.32,side:THREE.DoubleSide}));
+  movie.position.set(screenX-s*.13,2.63,r.center); movie.rotation.y=s>0?Math.PI/2:-Math.PI/2; g.add(movie);
   for(const zside of[-1,1]){
     const curtain=new THREE.Mesh(new THREE.PlaneGeometry(1.18,3.22,6,8),M.fadedBurgundy);
     curtain.position.set(screenX-s*.15,2.67,r.center+zside*2.73);
@@ -2582,9 +2604,9 @@ function buildCinema(r){
   }
 
   // Clear, recognizable 35mm projector at the rear, aimed at the screen.
-  const boothX=r.inner+s*3.05;
-  box(boothX,2.35,r.center,1.55,2.05,3.0,M.darkWood,g);
-  box(boothX+s*.82,2.45,r.center,.05,.70,1.35,cmat(0x273238,.3),g,false,true);
+  const boothX=r.outer-s*5.45;
+  box(boothX,2.05,r.center,1.10,1.55,2.25,M.darkWood,g);
+  box(boothX-s*.58,2.18,r.center,.05,.58,1.10,cmat(0x273238,.3),g,false,true);
   cinemaProjector(g,boothX-s*.10,r.center,s);
 
   // Small concession area to keep the room from feeling empty.
@@ -2595,8 +2617,8 @@ function buildCinema(r){
   for(let i=0;i<3;i++) sphere(r.inner+s*.70,.72,counterZ-.65+i*.65,.09,cmat(0x8f7354,.85),g);
 
   // Poster frames and wall details fill the side walls naturally.
-  for(let i=0;i<6;i++) addPainting(g,screenX-s*.13,1.65+(i%3)*.72,r.a+1.2+i*2.85,-s*Math.PI/2,2000+i,.40,'A forgotten work hanging inside the old cinema.');
-  for(let i=0;i<3;i++) addPainting(g,r.inner+s*.08,1.8,r.a+3+i*5.3,s*Math.PI/2,2050+i,.43,'A faded cinema poster left behind in the gallery.');
+  for(let i=0;i<5;i++) galleryPainting(g,screenX-s*.13,1.62,r.a+2.0+i*4.35,-s*Math.PI/2,2000+i,.40,'A framed work hanging in the old cinema.',s);
+  for(let i=0;i<4;i++) galleryPainting(g,r.inner+s*.08,1.62,r.a+2.5+i*4.65,s*Math.PI/2,2050+i,.40,'A framed cinema work along the entrance wall.',-s);
 
   // Extra believable cinema clutter: aisle lamps, ticket stand, bins and stacked film cans.
   for(const z of[r.a+5.0,r.a+9.2,r.a+13.4,r.a+17.6]){
@@ -3178,23 +3200,23 @@ function buildCottage(r){
 
   // Fireplace is the visual anchor. Everything else faces it.
   const fx=r.outer-s*1.05;
-  realFireplace(g,fx,r.center,-s,true);
+  realFireplace(g,fx,r.center,s,true);
   // Mantel objects make the fireplace read immediately as the room's focal point.
   box(fx-s*.58,3.18,r.center,.10,.42,.55,M.brass,g,false,true);
   sphere(fx-s*.60,3.48,r.center-.78,.14,M.paper,g);
   sphere(fx-s*.60,3.48,r.center+.78,.14,M.paper,g);
 
-  const furnitureX=r.cx-s*3.15;
-  sofa(g,furnitureX,r.center+.25,M.burgundy,s*Math.PI/2);
-  armchair(g,r.cx-s*5.0,r.center-2.9,M.brownFabric,s*Math.PI/2);
-  armchair(g,r.cx-s*4.65,r.center+3.05,M.olive,s*Math.PI/2);
-  roundTable(g,r.cx-s*3.55,r.center+.30);
-  floorLamp(g,r.cx-s*5.75,r.center+2.8);
-  bookshelf(g,r.cx-s*5.75,r.center-2.3);
+  const furnitureX=r.outer-s*4.35;
+  sofa(g,furnitureX,r.center+.10,M.burgundy,s*Math.PI/2);
+  armchair(g,r.outer-s*5.35,r.center-2.35,M.brownFabric,s*Math.PI/2);
+  armchair(g,r.outer-s*5.35,r.center+2.45,M.olive,s*Math.PI/2);
+  roundTable(g,r.outer-s*3.45,r.center+.10);
+  floorLamp(g,r.outer-s*6.15,r.center+2.25);
+  bookshelf(g,r.inner+s*4.8,r.center-3.9);
 
   // Cozy rug centered between seating and fire.
   const rug=new THREE.Mesh(new THREE.CircleGeometry(2.65,48),new THREE.MeshStandardMaterial({map:carpet(55,'#593c3e'),roughness:1}));
-  rug.rotation.x=-Math.PI/2; rug.position.set(r.cx-s*3.0,.035,r.center+.2); g.add(rug);
+  rug.rotation.x=-Math.PI/2; rug.position.set(r.outer-s*4.35,.035,r.center+.1); g.add(rug);
 
   // Window opposite the seating, with blue rainy-night light.
   const wx=r.inner+s*.10;
@@ -3209,7 +3231,7 @@ function buildCottage(r){
   // Small domestic details.
   cyl(r.cx-s*3.55,.78,r.center+.28,.075,.13,M.paper,18,g);
   sphere(r.cx-s*5.75,.84,r.center+2.8,.10,M.paper,g);
-  for(let i=0;i<3;i++) addPainting(g,r.inner+s*.08,1.95,r.a+3+i*5.0,s*Math.PI/2,2250+i,.43,'A framed work beside old books and family photographs.');
+  for(let i=0;i<4;i++) galleryPainting(g,r.inner+s*.08,1.62,r.a+2.0+i*4.7,s*Math.PI/2,2250+i,.40,'A framed work in the cozy cottage gallery.',-s);
 }
 
 
@@ -3587,7 +3609,10 @@ function buildSnow(r){
   box(r.cx,.012,r.center,ROOM_W-.05,.035,ROOM_L-.05,blue.prussian,g,false,true);
 
   // Paint every room wall blue as well — no neutral shell remains visible.
-  box(r.inner+s*.07,2.30,r.center,.07,4.35,ROOM_L-.20,blue.deep,g,false,true);
+  // Blue inner wall, but preserve the actual hallway doorway opening.
+  const doorA=r.center-DOOR_HALF, doorB=r.center+DOOR_HALF;
+  box(r.inner+s*.07,2.30,(r.a+doorA)/2,.07,4.35,doorA-r.a,blue.deep,g,false,true);
+  box(r.inner+s*.07,2.30,(doorB+r.b)/2,.07,4.35,r.b-doorB,blue.deep,g,false,true);
   box(r.outer-s*.07,2.30,r.center,.07,4.35,ROOM_L-.20,blue.prussian,g,false,true);
   box(r.cx,2.30,r.a+.07,ROOM_W-.20,4.35,.07,blue.deep,g,false,true);
   box(r.cx,2.30,r.b-.07,ROOM_W-.20,4.35,.07,blue.prussian,g,false,true);
@@ -3629,8 +3654,9 @@ function buildSnow(r){
   const doorGlow=new THREE.PointLight(0x4da7cf,.65,5.5,2); doorGlow.position.set(-3.62,2.15,0); q.add(doorGlow);
 
   // Christmas trees with blue-only ornaments and lights.
-  const treeX=r.inner+s*4.65;
-  for(let i=0;i<7;i++) blueChristmasTree(g,treeX+(i%2)*.95*s,r.a+1.5+i*3.0,.72+(i%3)*.10,blue);
+  const treeX=r.outer-s*5.25;
+  const treePositions=[[-1.9,.72],[0,.88],[2.0,.70],[3.65,.62]];
+  for(const [dz,sc] of treePositions) blueChristmasTree(g,treeX+s*(dz%2?.45:0),r.center+dz,sc,blue);
   // Blue garlands along the cabin porch.
   for(let i=0;i<11;i++){
     sphere(r.outer-s*3.52,2.22,r.a+1+i*2.0,.045,blue.light,g);
@@ -3650,7 +3676,7 @@ function buildSnow(r){
   const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(arr,3));
   const pts=new THREE.Points(geo,new THREE.PointsMaterial({color:0x8fcbe0,size:.022,transparent:true,opacity:.62,depthWrite:false})); g.add(pts);
 
-  for(let i=0;i<4;i++) addBluePainting(g,r.outer-s*6.30,1.55+(i%2)*.72,r.a+2+i*4.2,-s*Math.PI/2,.40,'A winter painting inside the blue quiet of the snowfall.');
+  for(let i=0;i<4;i++) galleryPainting(g,r.outer-s*.13,1.62,r.a+2.2+i*4.7,-s*Math.PI/2,2600+i,.40,'A winter painting inside the blue quiet of the snowfall.',s);
 }
 
 
@@ -4299,10 +4325,10 @@ function buildHorror(r){
   rug.rotation.x=-Math.PI/2; rug.position.set(r.cx-s*2.8,.035,r.center); g.add(rug);
 
   // Furniture deliberately arranged toward the fireplace, but old and unsettling.
-  sofa(g,r.cx-s*3.25,r.center-2.15,M.creamFabric,s*Math.PI/2);
-  armchair(g,r.cx-s*4.35,r.center+2.8,M.olive,s*Math.PI/2);
-  roundTable(g,r.cx-s*4.85,r.b-2.4);
-  grandClock(g,r.inner+s*.15,r.center-4.8);
+  sofa(g,r.outer-s*4.75,r.center-1.65,M.creamFabric,s*Math.PI/2);
+  armchair(g,r.outer-s*5.55,r.center+2.35,M.olive,s*Math.PI/2);
+  roundTable(g,r.outer-s*3.85,r.center-1.45);
+  grandClock(g,r.outer-s*2.25,r.center-4.7);
   box(r.outer-s*.30,1.50,r.center+4.3,.55,2.95,2.20,M.darkWood,g);
   for(let i=0;i<4;i++) box(r.outer-s*.59,.78+i*.53,r.center+4.3,.05,.06,1.85,M.brass,g,false,true);
 
@@ -4319,7 +4345,7 @@ function buildHorror(r){
   horrorPortrait(g,r.outer-s*.13,r.center+2.9,-s,303);
   hangingChandelier(g,r.cx,r.center-1.2);
   // A large, unmistakable coffin makes the horror theme immediately readable.
-  horrorCoffin(g,r.cx-s*4.45,r.center+1.2,s*Math.PI/2);
+  horrorCoffin(g,r.outer-s*4.0,r.center+2.8,s*Math.PI/2);
   hangingChain(g,r.outer-s*.62,r.center-3.7);
   hangingChain(g,r.outer-s*.62,r.center+4.2);
   // Boarded window and coffin are reinforced with a few old warning placards.
@@ -4333,7 +4359,8 @@ function buildHorror(r){
   for(let i=0;i<7;i++){
     lineBetween(new THREE.Vector3(r.cx-s*(4.9+(i%2)*.5),.045,r.a+2+i*2.4),new THREE.Vector3(r.cx-s*(4.3+(i%2)*.4),.05,r.a+2.4+i*2.4),.018,cmat(0x3c151f,.95),g);
   }
-  for(let i=0;i<7;i++) addPainting(g,r.outer-s*.13,1.55+(i%3)*.65,r.a+1.5+i*2.8,-s*Math.PI/2,2500+i,.42,'An unsettling portrait left behind in the haunted house.');
+  for(let i=0;i<4;i++) galleryPainting(g,r.outer-s*.13,1.62,r.a+2.2+i*4.7,-s*Math.PI/2,2500+i,.40,'An unsettling portrait displayed in the haunted house.',s);
+  for(let i=0;i<3;i++) galleryPainting(g,r.inner+s*.08,1.62,r.a+3.0+i*5.2,s*Math.PI/2,2550+i,.40,'An unsettling portrait displayed along the interior wall.',-s);
   addParticles(g,r,'dust',120,0xb9a9aa,.012,.14);
 }
 
