@@ -395,9 +395,9 @@ const lobbyCenters=[
 
 const lobbyInfo=[
   {
-    name:'LOBBY 1 · THE OLD CINEMA',
+    name:'LOBBY 1 · THE ABANDONED PLAYROOM',
     side:-1,
-    type:'cinema'
+    type:'playroom'
   },
   {
     name:'LOBBY 2 · THE COTTAGE',
@@ -466,6 +466,11 @@ const atmos={
   cinema:{
     color:0x111820,
     density:.018
+  },
+
+  playroom:{
+    color:0x28313a,
+    density:.015
   },
 
   cottage:{
@@ -1968,8 +1973,8 @@ function addPainting(
     new THREE.MeshStandardMaterial({
       map:paintingCanvas(seed),
       roughness:.80,
-      emissive:0x211613,
-      emissiveIntensity:.18,
+      emissive:0x4a382d,
+      emissiveIntensity:.38,
       side:THREE.DoubleSide
     })
   );
@@ -2473,15 +2478,12 @@ function realFireplace(g,x,z,dir,lit=true){
   lineBetween(new THREE.Vector3(-.70,.67,-.68),new THREE.Vector3(-.70,.67,.68),.085,M.darkWood,q);
   lineBetween(new THREE.Vector3(-.71,.78,.58),new THREE.Vector3(-.71,.78,-.58),.075,M.darkWood,q);
   if(lit){
-    // IMPROVED FIRE: More realistic flame shapes and animation
-    for(let i=0;i<8;i++){
-      const flame=sphere(-.73,.75+(i%3)*.16,-.38+i*.15,.14,cmat(0xffb85d,.15,0xff6b1f,2.8),q);
-      flame.scale.set(.68+(i%2)*.15,1.9+(i%3)*.2,.55);
-      // Add flame data for animation
-      flame.userData.flameIndex=i;
+    for(let i=0;i<6;i++){
+      const f=sphere(-.73,.88+(i%3)*.11,-.42+i*.17,.12,cmat(0xffa03a,.18,0xff5b16,2.6),q);
+      f.scale.set(.72,1.7,.58);
     }
-    const fl=new THREE.PointLight(0xff9c42,2.4,9.2,2);
-    fl.position.set(-.88,1.12,0); fl.castShadow=true; q.add(fl);
+    const fl=new THREE.PointLight(0xff8b3b,2.0,8.5,2);
+    fl.position.set(-.88,1.08,0); fl.castShadow=true; q.add(fl);
   }
   return q;
 }
@@ -2558,7 +2560,7 @@ function movieScreenTexture(){
   const g=x.createLinearGradient(0,0,0,520);
   g.addColorStop(0,'#07121d'); g.addColorStop(.55,'#173b4d'); g.addColorStop(1,'#050709');
   x.fillStyle=g; x.fillRect(0,0,900,520);
-  // cinematic night scene / movie still without text
+  // cinematic night scene / movie still
   x.fillStyle='#081016'; x.fillRect(0,300,900,220);
   x.fillStyle='#203946';
   x.beginPath(); x.moveTo(0,360); x.lineTo(190,250); x.lineTo(350,335); x.lineTo(500,235); x.lineTo(690,330); x.lineTo(900,245); x.lineTo(900,520); x.lineTo(0,520); x.closePath(); x.fill();
@@ -2567,16 +2569,17 @@ function movieScreenTexture(){
   x.fillStyle='#c9e5ef'; x.beginPath(); x.arc(705,125,55,0,Math.PI*2); x.fill();
   x.fillStyle='rgba(210,235,245,.22)';
   for(let i=0;i<14;i++){ x.fillRect(35+i*65,70+(i%5)*35,2,2); }
+  x.fillStyle='rgba(230,240,245,.78)'; x.font='bold 28px Georgia'; x.textAlign='center'; x.fillText('THE NIGHT',450,475);
   return new THREE.CanvasTexture(c);
 }
 
 function galleryPainting(group,x,y,z,rotationY,seed,scale,note,wallSide){
   const art=addPainting(group,x,y,z,rotationY,seed,scale,note);
-  art.material.emissive= new THREE.Color(0x34302b);
-  art.material.emissiveIntensity=.45;
+  art.material.emissive= new THREE.Color(0x594535);
+  art.material.emissiveIntensity=.62;
   const s=wallSide;
   const inwardX = Math.abs(Math.abs(rotationY)-Math.PI/2)<.25 ? x - s*.34 : x;
-  const light=new THREE.PointLight(0xffd9a0,.42,5.2,2);
+  const light=new THREE.PointLight(0xffd9a0,.52,5.2,2);
   light.position.set(inwardX,y+.12,z);
   group.add(light);
   return art;
@@ -2599,30 +2602,30 @@ function buildCinema(r){
   const screenLight=new THREE.PointLight(0x9fc9df,1.05,10,2);
   screenLight.position.set(screenX-s*.8,2.55,r.center); g.add(screenLight);
 
-  // FIXED: Seats positioned further back, not blocking door
-  for(let row=0;row<3;row++){
-    const x=r.inner+s*(2.35+row*1.68);
-    for(let col=-2;col<=2;col++){
-      // Move seats further from door along z-axis
-      const seatZ = r.center + col*1.05;
-      if(Math.abs(seatZ - r.center) > 2.5) {
-        theaterSeat(g,x,seatZ,s*Math.PI/2);
-      }
-    }
+  // Seats face the projector/screen, not the hallway.
+  for(let row=0;row<4;row++){
+    const x=r.inner+s*(2.25+row*1.55);
+    for(let col=-2;col<=2;col++) theaterSeat(g,x,r.center+col*1.05,s*Math.PI/2);
   }
 
-  // Concession area
+  // Clear, recognizable 35mm projector at the rear, aimed at the screen.
+  const boothX=r.outer-s*5.45;
+  box(boothX,2.05,r.center,1.10,1.55,2.25,M.darkWood,g);
+  box(boothX-s*.58,2.18,r.center,.05,.58,1.10,cmat(0x273238,.3),g,false,true);
+  cinemaProjector(g,boothX-s*.10,r.center,s);
+
+  // Small concession area to keep the room from feeling empty.
   const counterZ=r.a+4.0;
   box(r.inner+s*1.0,1.02,counterZ,1.35,.16,2.30,M.darkWood,g);
   box(r.inner+s*.98,.50,counterZ,1.15,.90,2.12,M.darkWood,g);
   box(r.inner+s*.95,1.68,counterZ,.72,.85,.04,cmat(0x28292b,.30),g,false,true);
   for(let i=0;i<3;i++) sphere(r.inner+s*.70,.72,counterZ-.65+i*.65,.09,cmat(0x8f7354,.85),g);
 
-  // Poster frames on side walls with improved lighting
+  // Poster frames and wall details fill the side walls naturally.
   for(let i=0;i<5;i++) galleryPainting(g,screenX-s*.13,1.62,r.a+2.0+i*4.35,-s*Math.PI/2,2000+i,.40,'A framed work hanging in the old cinema.',s);
   for(let i=0;i<4;i++) galleryPainting(g,r.inner+s*.08,1.62,r.a+2.5+i*4.65,s*Math.PI/2,2050+i,.40,'A framed cinema work along the entrance wall.',-s);
 
-  // Cinema fixtures
+  // Extra believable cinema clutter: aisle lamps, ticket stand, bins and stacked film cans.
   for(const z of[r.a+5.0,r.a+9.2,r.a+13.4,r.a+17.6]){
     cyl(r.inner+s*1.15,.72,z,.035,1.30,M.brass,10,g);
     sphere(r.inner+s*1.15,1.42,z,.10,cmat(0x9db9c4,.3,0x4c7180,1.0),g);
@@ -2631,7 +2634,10 @@ function buildCinema(r){
   for(let i=0;i<5;i++){
     cyl(r.inner+s*1.25,.99,r.b-2.45+i*.23,.16,.08,M.oldMetal,20,g);
   }
-
+  for(let i=0;i<4;i++){
+    cyl(boothX-s*.45,.38,r.center-1.05+i*.38,.22,.12,M.oldMetal,20,g);
+    cyl(boothX-s*.45,.47,r.center-1.05+i*.38,.18,.04,M.brass,20,g);
+  }
   addParticles(g,r,'dust',110,0xd8d0c5,.012,.18);
 }
 
@@ -3190,6 +3196,69 @@ function fireplace(
   fireLight.castShadow=true;
 
   g.add(fireLight);
+}
+
+
+/* ============================================================
+   LOBBY 1 · ABANDONED LIMINAL PLAYROOM
+   ============================================================ */
+
+function playroomSlide(g,x,z,dir){
+  const q=new THREE.Group(); q.position.set(x,0,z); q.rotation.y=dir; g.add(q);
+  const plastic=cmat(0xd7c7a9,.58,0x8a6b4b,.12);
+  const blue=cmat(0x577c91,.50,0x29485a,.10);
+  // Safe, recognisable play structure with ladder and a long empty slide.
+  box(0,1.48,0,1.55,.16,1.35,blue,q);
+  for(let i=0;i<5;i++){
+    box(-.56,.28+i*.27,-.34+i*.03,.11,.08,.72,M.oldMetal,q);
+    box(.56,.28+i*.27,-.34+i*.03,.11,.08,.72,M.oldMetal,q);
+  }
+  lineBetween(new THREE.Vector3(-.56,.32,-.68),new THREE.Vector3(-.56,1.48,-.68),.045,M.oldMetal,q);
+  lineBetween(new THREE.Vector3(.56,.32,-.68),new THREE.Vector3(.56,1.48,-.68),.045,M.oldMetal,q);
+  const curve=new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0,1.46,.28),new THREE.Vector3(0,1.16,.72),
+    new THREE.Vector3(0,.72,1.28),new THREE.Vector3(0,.26,2.35),new THREE.Vector3(0,.16,3.15)
+  ]);
+  const tube=new THREE.Mesh(new THREE.TubeGeometry(curve,28,.40,14,false),plastic);
+  tube.scale.x=.72; tube.castShadow=true; q.add(tube);
+  const inner=new THREE.Mesh(new THREE.TubeGeometry(curve,28,.29,14,false),cmat(0x252a2d,.82));
+  inner.scale.x=.72; q.add(inner);
+}
+
+function buildPlayroom(r){
+  const g=r.g, s=r.side;
+  const tileA=cmat(0xc5b79f,.92), tileB=cmat(0x8798a0,.92), grout=cmat(0x3b3e40,1);
+  // Oversized worn rubber tiles: cheerful by design, unsettling through emptiness and decay.
+  for(let ix=0;ix<5;ix++) for(let iz=0;iz<8;iz++){
+    const x=r.cx-6+ix*3, z=r.a+1.5+iz*2.65;
+    box(x,.018,z,2.72,.045,2.37,(ix+iz)%2?tileA:tileB,g,false,true);
+  }
+  box(r.cx,.055,r.center,ROOM_W-.08,.035,ROOM_L-.08,grout,g,false,true);
+  for(let ix=0;ix<5;ix++) for(let iz=0;iz<8;iz++)
+    box(r.cx-6+ix*3,.083,r.a+1.5+iz*2.65,2.65,.03,2.30,(ix+iz)%2?tileA:tileB,g,false,true);
+
+  playroomSlide(g,r.cx-s*3.4,r.center-1.2,s>0?Math.PI:0);
+  // Ball pit pushed to one side, leaving a clear path and a believable playroom circulation.
+  const pitX=r.cx+s*4.0, pitZ=r.center+3.0;
+  box(pitX,.62,pitZ,5.4,1.05,4.4,cmat(0x6c7c86,.70),g);
+  box(pitX,.98,pitZ-2.1,5.65,.18,.18,cmat(0x46535b,.70),g);
+  box(pitX,.98,pitZ+2.1,5.65,.18,.18,cmat(0x46535b,.70),g);
+  box(pitX-2.7,.98,pitZ,.18,.18,4.4,cmat(0x46535b,.70),g);
+  box(pitX+2.7,.98,pitZ,.18,.18,4.4,cmat(0x46535b,.70),g);
+  const balls=[0xe39c84,0xd6c36e,0x7696a3,0xb07b87,0xc7d5c4,0x8e738b];
+  const rr=seeded(1901);
+  for(let i=0;i<32;i++) sphere(pitX-2.2+rr()*4.4,.45+rr()*.65,pitZ-1.65+rr()*3.3,.18,cmat(balls[i%balls.length],.62),g);
+  // Balloons trapped against the ceiling, strings hanging at slightly wrong lengths.
+  for(let i=0;i<9;i++){
+    const x=r.cx-5.6+(i%5)*2.8, z=r.a+3.0+Math.floor(i/5)*7.2;
+    const balloon=sphere(x,4.35,z,.42,cmat([0x9f6f79,0xc2a878,0x718895][i%3],.40,0x35252b,.08),g);
+    balloon.scale.set(.84,1.12,.84);
+    lineBetween(new THREE.Vector3(x,3.95,z),new THREE.Vector3(x,.85+(i%3)*.3,z+(i%2?.35:-.25)),.012,M.paper,g);
+  }
+  // Wall-mounted art is spaced like a real gallery: even sightline, consistent frames, dedicated light.
+  for(let i=0;i<4;i++) galleryPainting(g,r.outer-s*.13,1.72,r.a+2.2+i*4.7,-s*Math.PI/2,2100+i,.43,'A faded children\'s print still presented with gallery discipline.',s);
+  for(let i=0;i<3;i++) galleryPainting(g,r.inner+s*.08,1.72,r.a+3.0+i*5.4,s*Math.PI/2,2150+i,.43,'A bright placeholder painting in the abandoned playroom.',-s);
+  addParticles(g,r,'dust',150,0xd7d7c5,.010,.16);
 }
 
 
@@ -4163,7 +4232,7 @@ function buildStreet(r){
   cyl(roadX+s*4.05,.70,r.center-2.2,.045,1.35,M.darkWood,10,g);
   box(roadX+s*4.05,1.40,r.center-2.2,.48,.32,.35,M.oldMetal,g);
   cyl(roadX-s*4.0,.42,r.center+5.2,.12,.55,cmat(0x733631,.76),14,g);
-  for(let i=0;i<5;i++) galleryPainting(g,roadX-s*4.85,1.55,r.a+2+i*3.8,-s*Math.PI/2,2400+i,.38,'A night painting quietly placed along the residential street.',s);
+  for(let i=0;i<5;i++) addPainting(g,roadX-s*4.85,1.55,r.a+2+i*3.8,-s*Math.PI/2,2400+i,.38,'A night painting quietly placed along the residential street.');
   addParticles(g,r,'mist',65,0xb6c5cb,.015,.09);
 }
 
@@ -4328,6 +4397,8 @@ function buildHorror(r){
   armchair(g,r.outer-s*5.55,r.center+2.35,M.olive,s*Math.PI/2);
   roundTable(g,r.outer-s*3.85,r.center-1.45);
   grandClock(g,r.outer-s*2.25,r.center-4.7);
+  // No cabinet in the room center: the circulation zone stays open and believable.
+  // The remaining storage is kept against the outer wall as a shallow built-in.
   box(r.outer-s*.30,1.50,r.center+4.3,.55,2.95,2.20,M.darkWood,g);
   for(let i=0;i<4;i++) box(r.outer-s*.59,.78+i*.53,r.center+4.3,.05,.06,1.85,M.brass,g,false,true);
 
@@ -4336,9 +4407,10 @@ function buildHorror(r){
   box(wx,2.35,r.center+6.2,.05,2.55,2.85,cmat(0x11161c,.48),g,false,true);
   for(const zz of[r.center+4.82,r.center+6.2,r.center+7.58]) box(wx-s*.04,2.35,zz,.09,2.70,.12,M.darkWood,g);
   for(const yy of[1.55,2.15,2.75]) lineBetween(new THREE.Vector3(wx-s*.07,yy,r.center+4.95),new THREE.Vector3(wx-s*.07,yy,r.center+7.45),.035,M.darkWood,g);
-  const moon=new THREE.PointLight(0x627b96,.24,6,2); moon.position.set(wx-s*.8,2.4,r.center+6.2); g.add(moon);
+  const moon=new THREE.PointLight(0x627b96,.34,7,2); moon.position.set(wx-s*.8,2.4,r.center+6.2); g.add(moon);
 
-  // IMPROVED HORROR: Explicit horror elements with enhanced visibility
+  // Explicit horror cues: portraits, chandelier, candles, cracked-looking marks and a coffin-like chest.
+  // The room is intentionally readable as horror at first glance, not merely ambiguous old furniture.
   horrorPortrait(g,r.inner+s*.10,r.a+2.2,s,301);
   horrorPortrait(g,r.outer-s*.13,r.center-1.0,-s,302);
   horrorPortrait(g,r.outer-s*.13,r.center+2.9,-s,303);
@@ -4352,7 +4424,7 @@ function buildHorror(r){
   for(const [x,z] of[[r.cx-s*3.0,r.center-5.2],[r.cx-s*5.2,r.center+1.0],[r.cx-s*4.4,r.b-2.2]]){
     cyl(x,.92,z,.035,.35,M.paper,12,g);
     sphere(x,1.14,z,.045,cmat(0xffb45e,.2,0xff7020,2),g);
-    const l=new THREE.PointLight(0xff9852,.45,4.8,2); l.position.set(x,1.12,z); g.add(l);
+    const l=new THREE.PointLight(0xff9852,.25,3.5,2); l.position.set(x,1.12,z); g.add(l);
   }
   // Creeping dark red streaks on the floor/wall as atmosphere, not gore.
   for(let i=0;i<7;i++){
@@ -4463,6 +4535,9 @@ for(
   if(info.type==='cinema')
     buildCinema(r);
 
+  if(info.type==='playroom')
+    buildPlayroom(r);
+
   if(info.type==='cottage')
     buildCottage(r);
 
@@ -4488,6 +4563,7 @@ function roomLighting(
 
   const colors={
     cinema:0x9fc7d9,
+    playroom:0xe0c28f,
     cottage:0xffbd78,
     snow:0x5f9fc1,
     street:0x7c9eb3,
@@ -4507,7 +4583,7 @@ function roomLighting(
   const l1=
     new THREE.PointLight(
       color,
-      type==='horror'?.20:(type==='cinema'?.55:.38),
+      type==='horror'?.38:(type==='playroom'?.72:(type==='cinema'?.72:.52)),
       10,
       2
     );
@@ -4524,7 +4600,7 @@ function roomLighting(
   const l2=
     new THREE.PointLight(
       color,
-      type==='horror'?.14:(type==='cinema'?.34:.24),
+      type==='horror'?.30:(type==='playroom'?.42:(type==='cinema'?.42:.34)),
       8,
       2
     );
@@ -4961,6 +5037,7 @@ function roomTone(type){
 
   const frequencies={
     cinema:82,
+    playroom:39,
     cottage:68,
     snow:124,
     street:91,
@@ -5153,19 +5230,6 @@ function animateWorld(dt){
         )
       );
   }
-
-
-  /*
-     ANIMATED FLAMES in horror room
-  */
-
-  scene.traverse(o=>{
-    if(o.userData?.flameIndex!==undefined){
-      const flameIdx=o.userData.flameIndex;
-      o.position.y+=Math.sin(elapsed*3.2+flameIdx)*dt*.08;
-      o.scale.y=1.9+Math.sin(elapsed*2.8+flameIdx*.5)*.3;
-    }
-  });
 
 
   /*
