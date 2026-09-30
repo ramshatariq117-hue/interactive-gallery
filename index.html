@@ -2582,13 +2582,13 @@ function buildCinema(r){
   }
 
   // Clear, recognizable 35mm projector at the rear, aimed at the screen.
-  const boothX=r.inner+s*.90;
+  const boothX=r.inner+s*3.05;
   box(boothX,2.35,r.center,1.55,2.05,3.0,M.darkWood,g);
   box(boothX+s*.82,2.45,r.center,.05,.70,1.35,cmat(0x273238,.3),g,false,true);
   cinemaProjector(g,boothX-s*.10,r.center,s);
 
   // Small concession area to keep the room from feeling empty.
-  const counterZ=r.a+3.0;
+  const counterZ=r.a+4.0;
   box(r.inner+s*1.0,1.02,counterZ,1.35,.16,2.30,M.darkWood,g);
   box(r.inner+s*.98,.50,counterZ,1.15,.90,2.12,M.darkWood,g);
   box(r.inner+s*.95,1.68,counterZ,.72,.85,.04,cmat(0x28292b,.30),g,false,true);
@@ -2597,6 +2597,20 @@ function buildCinema(r){
   // Poster frames and wall details fill the side walls naturally.
   for(let i=0;i<6;i++) addPainting(g,screenX-s*.13,1.65+(i%3)*.72,r.a+1.2+i*2.85,-s*Math.PI/2,2000+i,.40,'A forgotten work hanging inside the old cinema.');
   for(let i=0;i<3;i++) addPainting(g,r.inner+s*.08,1.8,r.a+3+i*5.3,s*Math.PI/2,2050+i,.43,'A faded cinema poster left behind in the gallery.');
+
+  // Extra believable cinema clutter: aisle lamps, ticket stand, bins and stacked film cans.
+  for(const z of[r.a+5.0,r.a+9.2,r.a+13.4,r.a+17.6]){
+    cyl(r.inner+s*1.15,.72,z,.035,1.30,M.brass,10,g);
+    sphere(r.inner+s*1.15,1.42,z,.10,cmat(0x9db9c4,.3,0x4c7180,1.0),g);
+  }
+  box(r.inner+s*1.25,.85,r.b-2.0,.95,.12,1.25,M.darkWood,g);
+  for(let i=0;i<5;i++){
+    cyl(r.inner+s*1.25,.99,r.b-2.45+i*.23,.16,.08,M.oldMetal,20,g);
+  }
+  for(let i=0;i<4;i++){
+    cyl(boothX-s*.45,.38,r.center-1.05+i*.38,.22,.12,M.oldMetal,20,g);
+    cyl(boothX-s*.45,.47,r.center-1.05+i*.38,.18,.04,M.brass,20,g);
+  }
   addParticles(g,r,'dust',110,0xd8d0c5,.012,.18);
 }
 
@@ -3163,8 +3177,12 @@ function buildCottage(r){
   box(r.cx,.012,r.center,ROOM_W-.15,.035,ROOM_L-.15,new THREE.MeshStandardMaterial({map:oldFloor(61),roughness:1}),g,false,true);
 
   // Fireplace is the visual anchor. Everything else faces it.
-  const fx=r.outer-s*.32;
-  realFireplace(g,fx,r.center,s,true);
+  const fx=r.outer-s*1.05;
+  realFireplace(g,fx,r.center,-s,true);
+  // Mantel objects make the fireplace read immediately as the room's focal point.
+  box(fx-s*.58,3.18,r.center,.10,.42,.55,M.brass,g,false,true);
+  sphere(fx-s*.60,3.48,r.center-.78,.14,M.paper,g);
+  sphere(fx-s*.60,3.48,r.center+.78,.14,M.paper,g);
 
   const furnitureX=r.cx-s*3.15;
   sofa(g,furnitureX,r.center+.25,M.burgundy,s*Math.PI/2);
@@ -3567,6 +3585,16 @@ function buildSnow(r){
   };
 
   box(r.cx,.012,r.center,ROOM_W-.05,.035,ROOM_L-.05,blue.prussian,g,false,true);
+
+  // Paint every room wall blue as well — no neutral shell remains visible.
+  box(r.inner+s*.07,2.30,r.center,.07,4.35,ROOM_L-.20,blue.deep,g,false,true);
+  box(r.outer-s*.07,2.30,r.center,.07,4.35,ROOM_L-.20,blue.prussian,g,false,true);
+  box(r.cx,2.30,r.a+.07,ROOM_W-.20,4.35,.07,blue.deep,g,false,true);
+  box(r.cx,2.30,r.b-.07,ROOM_W-.20,4.35,.07,blue.prussian,g,false,true);
+  // Vertical blue timber strips break up the flat wall planes.
+  for(const zz of[r.a+1.5,r.a+5.5,r.a+9.5,r.a+13.5,r.a+17.5,r.a+21.5]){
+    box(r.outer-s*.13,2.25,zz,.10,4.15,.10,blue.phthalo,g);
+  }
   // raised snow banks instead of a z-fighting snow sheet
   for(let i=0;i<13;i++){
     const z=r.a+.9+i*1.82;
@@ -3578,12 +3606,20 @@ function buildSnow(r){
 
   // Cozy Christmas cabin, still entirely blue.
   const q=new THREE.Group(); q.position.set(r.outer-s*3.55,0,r.center-1.2); q.rotation.y=s<0?Math.PI/2:-Math.PI/2; g.add(q);
-  box(0,1.15,0,5.7,2.3,6.4,blue.prussian,q);
+  box(0,1.10,0,5.4,2.2,6.0,blue.prussian,q);
+  // Gabled roof made from sloped planes, with a triangular-looking front rather than a flat block.
   for(const side of[-1,1]){
-    const roof=new THREE.Mesh(new THREE.BoxGeometry(3.65,.26,6.7),blue.deep); roof.position.set(side*1.45,2.72,0); roof.rotation.z=side<0?.54:-.54; q.add(roof);
-    const snow=new THREE.Mesh(new THREE.BoxGeometry(3.78,.18,6.82),blue.cerulean); snow.position.set(side*1.45,2.91,0); snow.rotation.z=side<0?.54:-.54; q.add(snow);
+    const roof=new THREE.Mesh(new THREE.BoxGeometry(3.25,.22,6.35),blue.deep); roof.position.set(side*1.34,2.55,0); roof.rotation.z=side<0?.57:-.57; q.add(roof);
+    const snow=new THREE.Mesh(new THREE.BoxGeometry(3.38,.12,6.48),blue.cerulean); snow.position.set(side*1.34,2.70,0); snow.rotation.z=side<0?.57:-.57; q.add(snow);
   }
-  box(-2.90,1.0,0,.10,1.65,1.0,blue.dark,q);
+  // Front facade, door, porch and windows give it a readable rural Christmas-house silhouette.
+  box(-2.73,1.02,0,.10,1.78,1.05,blue.dark,q);
+  box(-2.80,.12,0,.85,.16,2.10,blue.dark,q);
+  for(const zz of[-1.62,1.62]){
+    box(-2.78,1.40,zz,.08,.95,1.15,blue.phthalo,q,false,true);
+    box(-2.83,1.40,zz,.10,1.02,.08,blue.dark,q);
+    box(-2.83,1.40,zz,.10,.08,1.12,blue.dark,q);
+  }
   for(const zz of[-1.65,1.65]){
     box(-2.94,1.45,zz,.055,1.08,1.18,cmat(0x5fb1cf,.25,0x173e5c,1.0),q,false,true);
     box(-2.98,1.45,zz,.08,1.18,.08,blue.dark,q);
@@ -4206,6 +4242,48 @@ function grandClock(
 }
 
 
+function horrorCoffin(g,x,z,rotation=0){
+  const q=new THREE.Group();
+  q.position.set(x,.05,z);
+  q.rotation.y=rotation;
+  g.add(q);
+
+  // Clearly recognizable coffin silhouette: tapered body + raised lid + brass fittings.
+  const shape=new THREE.Shape();
+  shape.moveTo(-.72,-1.55);
+  shape.lineTo(.72,-1.55);
+  shape.lineTo(.96,-.72);
+  shape.lineTo(.72,1.55);
+  shape.lineTo(-.72,1.55);
+  shape.lineTo(-.96,-.72);
+  shape.closePath();
+  const geo=new THREE.ExtrudeGeometry(shape,{depth:.18,bevelEnabled:true,bevelSegments:2,bevelSize:.035,bevelThickness:.035});
+  geo.rotateX(-Math.PI/2);
+  const body=new THREE.Mesh(geo,M.darkWood);
+  body.position.set(0,.55,0);
+  body.scale.set(.92,.92,1.0);
+  body.castShadow=true;
+  q.add(body);
+
+  box(0,.64,.08,1.82,.08,3.16,cmat(0x171015,1),q,false,true);
+  // lid rim
+  box(0,1.20,.02,1.72,.10,3.05,M.darkWood,q);
+  for(const zz of[-.72,.72]) cyl(0,1.29,zz,.055,.22,M.brass,12,q,{x:Math.PI/2});
+  // unmistakable cross-shaped lid hardware
+  box(0,1.34,0,.09,.05,.72,M.brass,q,false,true);
+  box(0,1.34,0,.52,.05,.09,M.brass,q,false,true);
+  return q;
+}
+
+function hangingChain(g,x,z){
+  for(let i=0;i<9;i++){
+    const link=new THREE.Mesh(new THREE.TorusGeometry(.09,.025,8,14),M.oldMetal);
+    link.position.set(x,.72+i*.28,z);
+    link.rotation.x=i%2?Math.PI/2:0;
+    g.add(link);
+  }
+}
+
 function buildHorror(r){
   const g=r.g, s=r.side;
   box(r.cx,.012,r.center,ROOM_W-.1,.035,ROOM_L-.1,new THREE.MeshStandardMaterial({map:wood(77,true),roughness:1}),g,false,true);
@@ -4240,8 +4318,12 @@ function buildHorror(r){
   horrorPortrait(g,r.outer-s*.13,r.center-1.0,-s,302);
   horrorPortrait(g,r.outer-s*.13,r.center+2.9,-s,303);
   hangingChandelier(g,r.cx,r.center-1.2);
-  box(r.cx-s*4.5,.42,r.center+1.1,1.05,.70,2.65,M.darkWood,g);
-  box(r.cx-s*4.5,.80,r.center+1.1,.82,.05,2.35,cmat(0x171015,1),g,false,true);
+  // A large, unmistakable coffin makes the horror theme immediately readable.
+  horrorCoffin(g,r.cx-s*4.45,r.center+1.2,s*Math.PI/2);
+  hangingChain(g,r.outer-s*.62,r.center-3.7);
+  hangingChain(g,r.outer-s*.62,r.center+4.2);
+  // Boarded window and coffin are reinforced with a few old warning placards.
+  box(r.cx-s*5.1,2.72,r.center+4.85,.06,.58,1.30,cmat(0x22151b,.9),g,false,true);
   for(const [x,z] of[[r.cx-s*3.0,r.center-5.2],[r.cx-s*5.2,r.center+1.0],[r.cx-s*4.4,r.b-2.2]]){
     cyl(x,.92,z,.035,.35,M.paper,12,g);
     sphere(x,1.14,z,.045,cmat(0xffb45e,.2,0xff7020,2),g);
