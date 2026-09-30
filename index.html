@@ -153,158 +153,948 @@ function sphere(x,y,z,r,material,parent=scene){const m=new THREE.Mesh(new THREE.
 function lineBetween(a,b,r,material,parent=scene){const dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,len=Math.hypot(dx,dy,dz);const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,7),material);m.position.set((a.x+b.x)/2,(a.y+b.y)/2,(a.z+b.z)/2);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(dx,dy,dz).normalize());m.castShadow=true;parent.add(m);return m}
 
 /* ------------------------------------------------------------
-   HALLWAY ARCHITECTURE
+   REALISTIC WORLD REBUILD
+   Keeps the original dimensions, navigation and interaction.
    ------------------------------------------------------------ */
-box(0,-.08,HALL_LENGTH/2,2*HALL_HALF,.16,HALL_LENGTH,M.wood,scene,false,true);
-box(0,.012,HALL_LENGTH/2,1.60,.035,HALL_LENGTH-.3,new THREE.MeshStandardMaterial({map:rug(2,'#52303a'),roughness:1}),scene,false,true);
-box(-1.35,.25,HALL_LENGTH/2,.16,.30,HALL_LENGTH,M.darkWood,scene,false,true);box(1.35,.25,HALL_LENGTH/2,.16,.30,HALL_LENGTH,M.darkWood,scene,false,true);
-box(-1.33,4.45,HALL_LENGTH/2,.13,.17,HALL_LENGTH,M.wood,scene,false,true);box(1.33,4.45,HALL_LENGTH/2,.13,.17,HALL_LENGTH,M.wood,scene,false,true);
-for(let z=5;z<130;z+=10)box(0,4.48,z,2.86,.18,.24,M.darkWood);
 
+/* Slightly broader architectural fill so materials remain readable. */
+const worldFillWarm=new THREE.DirectionalLight(0xffe0ba,.30);
+worldFillWarm.position.set(-6,8,38);
+worldFillWarm.target.position.set(0,1,65);
+scene.add(worldFillWarm,worldFillWarm.target);
+
+const worldFillCool=new THREE.DirectionalLight(0xb5d0e6,.16);
+worldFillCool.position.set(7,7,90);
+worldFillCool.target.position.set(0,1,90);
+scene.add(worldFillCool,worldFillCool.target);
+
+/* ------------------------------------------------------------
+   ARCHITECTURE HELPERS
+   ------------------------------------------------------------ */
+
+function panelMolding(side,z){
+  const x=side*1.285;
+  box(x,.42,z,.085,.10,1.55,M.darkWood,scene,false,true);
+  box(x,.46,z-0.78,.085,1.00,.08,M.darkWood,scene,false,true);
+  box(x,.46,z+0.78,.085,1.00,.08,M.darkWood,scene,false,true);
+  box(x,.92,z,.085,.08,1.48,M.darkWood,scene,false,true);
+}
+
+function hallwayLamp(side,z,idx){
+  const x=side*1.27;
+
+  box(x-side*.025,2.58,z,.12,.26,.17,M.brass,scene,false,true);
+  sphere(x-side*.10,2.72,z,.075,cmat(0xffd18a,.20,0xffad4a,2.0),scene);
+
+  const glow=new THREE.PointLight(
+    0xffc37b,
+    idx%5===0?1.18:.94,
+    8.2,
+    2
+  );
+  glow.position.set(x-side*.25,2.60,z);
+  glow.castShadow=idx%4===0;
+  scene.add(glow);
+  hallLights.push({l:glow,base:glow.intensity,phase:idx*.71});
+}
+
+function oldFrame(side,z,seed){
+  addPainting(
+    scene,
+    side*1.30,
+    2.02,
+    z,
+    side<0?Math.PI/2:-Math.PI/2,
+    seed,
+    .55,
+    'A night scene encountered quietly along the old manor corridor.'
+  );
+}
+
+/* ------------------------------------------------------------
+   HALLWAY — OLD MANOR / GALLERY
+   ------------------------------------------------------------ */
+
+box(0,-.08,HALL_LENGTH/2,2*HALL_HALF,.16,HALL_LENGTH,M.wood,scene,false,true);
+box(0,.012,HALL_LENGTH/2,1.58,.035,HALL_LENGTH-.3,new THREE.MeshStandardMaterial({map:rug(2,'#4f3039'),roughness:1}),scene,false,true);
+
+/* worn runner edges */
+box(-.84,.032,HALL_LENGTH/2,.055,.025,HALL_LENGTH-.3,cmat(0x9a755f,.96),scene,false,true);
+box(.84,.032,HALL_LENGTH/2,.055,.025,HALL_LENGTH-.3,cmat(0x9a755f,.96),scene,false,true);
+
+/* substantial old dado and baseboards */
+box(-1.36,.28,HALL_LENGTH/2,.18,.52,HALL_LENGTH,M.darkWood,scene,false,true);
+box(1.36,.28,HALL_LENGTH/2,.18,.52,HALL_LENGTH,M.darkWood,scene,false,true);
+box(-1.33,.91,HALL_LENGTH/2,.10,.13,HALL_LENGTH,M.wood,scene,false,true);
+box(1.33,.91,HALL_LENGTH/2,.10,.13,HALL_LENGTH,M.wood,scene,false,true);
+box(-1.32,.58,HALL_LENGTH/2,.10,.08,HALL_LENGTH,M.darkWood,scene,false,true);
+box(1.32,.58,HALL_LENGTH/2,.10,.08,HALL_LENGTH,M.darkWood,scene,false,true);
+
+/* crown moulding */
+box(-1.34,4.40,HALL_LENGTH/2,.14,.16,HALL_LENGTH,M.wood,scene,false,true);
+box(1.34,4.40,HALL_LENGTH/2,.14,.16,HALL_LENGTH,M.wood,scene,false,true);
+
+for(let z=5;z<130;z+=10){
+  box(0,4.49,z,2.84,.18,.24,M.darkWood,scene,false,true);
+}
+
+/* wall panel rhythm intentionally irregular */
+for(const z of [6,16.5,27,38.5,50,61,72.5,84,95.5,108,120.5]){
+  panelMolding(-1,z);
+}
+for(const z of [9,20.5,32,44.5,56,68.5,80,91.5,103,115.5,127]){
+  panelMolding(1,z);
+}
+
+/* hallway wall segments retain the five real openings */
 const colliders=[];
 function addCollider(x1,x2,z1,z2){colliders.push({minX:Math.min(x1,x2),maxX:Math.max(x1,x2),minZ:Math.min(z1,z2),maxZ:Math.max(z1,z2)})}
 function hit(x,z,r,b){return x+r>b.minX&&x-r<b.maxX&&z+r>b.minZ&&z-r<b.maxZ}
-function canMove(x,z){if(x<-(HALL_HALF+ROOM_W-.42)||x>(HALL_HALF+ROOM_W-.42)||z<.7||z>HALL_LENGTH-.7)return false;for(const b of colliders)if(hit(x,z,.27,b))return false;return true}
+function canMove(x,z){
+  if(x<-(HALL_HALF+ROOM_W-.42)||x>(HALL_HALF+ROOM_W-.42)||z<.7||z>HALL_LENGTH-.7)return false;
+  for(const b of colliders)if(hit(x,z,.27,b))return false;
+  return true;
+}
 
-function doorFrame(side,z){const x=side*HALL_HALF;box(x-side*.11,3.87,z,.26,.18,3.48,M.darkWood);box(x-side*.11,1.92,z-DOOR_HALF-.07,.26,3.76,.22,M.wood);box(x-side*.11,1.92,z+DOOR_HALF+.07,.26,3.76,.22,M.wood);box(x-side*.11,.095,z,.25,.09,3.46,M.darkWood);}
-function hallwayWall(side){const x=side*HALL_HALF;const openings=lobbyCenters.filter((z,i)=>lobbyInfo[i].side===side);let cursor=0;for(const z of openings){const a=z-DOOR_HALF,b=z+DOOR_HALF;if(a>cursor){box(x,ROOM_H/2,(cursor+a)/2,.16,ROOM_H,a-cursor,M.wall,scene,false,true);addCollider(x-.08,x+.08,cursor,a)}doorFrame(side,z);cursor=b}if(cursor<HALL_LENGTH){box(x,ROOM_H/2,(cursor+HALL_LENGTH)/2,.16,ROOM_H,HALL_LENGTH-cursor,M.wall,scene,false,true);addCollider(x-.08,x+.08,cursor,HALL_LENGTH)}}
-hallwayWall(-1);hallwayWall(1);box(0,ROOM_H/2,HALL_LENGTH+.07,2.8,ROOM_H,.16,M.wall,scene,false,true);addCollider(-1.4,1.4,HALL_LENGTH-.02,HALL_LENGTH+.16);
+function doorFrame(side,z){
+  const x=side*HALL_HALF;
+  box(x-side*.12,3.88,z,.28,.20,3.58,M.darkWood,scene,false,true);
+  box(x-side*.12,1.94,z-DOOR_HALF-.08,.28,3.78,.24,M.wood,scene,false,true);
+  box(x-side*.12,1.94,z+DOOR_HALF+.08,.28,3.78,.24,M.wood,scene,false,true);
+  box(x-side*.18,1.86,z-DOOR_HALF+.15,.05,3.30,.04,M.brass,scene,false,true);
+  box(x-side*.18,1.86,z-DOOR_HALF+.15,.05,3.30,.04,M.brass,scene,false,true);
+  sphere(x+side*.01,1.48,z-DOOR_HALF+.16,.05,M.brass,scene);
+  box(x+side*.03,3.28,z,.035,.20,.82,M.brass,scene,false,true);
+}
+
+function hallwayWall(side){
+  const x=side*HALL_HALF;
+  const openings=lobbyCenters.filter((z,i)=>lobbyInfo[i].side===side);
+  let cursor=0;
+  for(const z of openings){
+    const a=z-DOOR_HALF,b=z+DOOR_HALF;
+    if(a>cursor){
+      box(x,ROOM_H/2,(cursor+a)/2,.16,ROOM_H,a-cursor,M.wall,scene,false,true);
+      addCollider(x-.08,x+.08,cursor,a);
+    }
+    doorFrame(side,z);
+    cursor=b;
+  }
+  if(cursor<HALL_LENGTH){
+    box(x,ROOM_H/2,(cursor+HALL_LENGTH)/2,.16,ROOM_H,HALL_LENGTH-cursor,M.wall,scene,false,true);
+    addCollider(x-.08,x+.08,cursor,HALL_LENGTH);
+  }
+}
+
+hallwayWall(-1);
+hallwayWall(1);
+
+box(0,ROOM_H/2,HALL_LENGTH+.07,2.8,ROOM_H,.16,M.wall,scene,false,true);
+addCollider(-1.4,1.4,HALL_LENGTH-.02,HALL_LENGTH+.16);
 
 const hallLights=[];
-function sconce(side,z,i){const x=side*1.28;sphere(x-side*.10,2.65,z,.075,cmat(0xffd18c,.2,0xffad48,2.0));const l=new THREE.PointLight(0xffc579,i%5===0?1.18:.92,7.8,2);l.position.set(x-side*.22,2.60,z);l.castShadow=i%6===0;scene.add(l);hallLights.push({l,base:l.intensity,phase:i*.73})}
-for(let i=0,z=4;z<130;z+=7.6){sconce(-1,z,i++);sconce(1,z+3.8,i++)}
-/* quiet ceiling glow from old flush fixtures */
-for(const z of [18,43,68,93,118]){box(0,4.56,z,.52,.05,.52,cmat(0xffddb0,.4,0xffbb6a,.75),scene,false,true);const l=new THREE.PointLight(0xffc887,.42,6.5);l.position.set(0,4.05,z);scene.add(l)}
-
-/* Hallway storytelling details */
-function sideTable(x,z){box(x,.76,z,.60,.10,.44,M.wood);for(const dx of[-.22,.22])for(const dz of[-.14,.14])box(x+dx,.38,z+dz,.05,.72,.05,M.darkWood);cyl(x,.93,z,.06,.14,M.paper,12)}
-function mirror(side,z){const x=side*1.29;box(x,2.15,z,.07,1.64,.98,M.darkWood);box(x+side*.04,2.15,z,.025,1.42,.76,cmat(0x62707a,.18),scene,false,true)}
-function radiator(side,z){const x=side*1.30;box(x,.48,z,.13,.62,.92,M.metal);for(let i=0;i<6;i++)box(x-side*.075,.48,z-.34+i*.135,.05,.47,.06,M.brass,scene,false,true)}
-function coatRack(x,z){cyl(x,.96,z,.045,1.9,M.darkWood,12);for(let i=0;i<5;i++){const a=i*Math.PI*2/5;cyl(x+Math.cos(a)*.2,1.83,z+Math.sin(a)*.2,.025,.36,M.darkWood,10,scene,{z:-a*.2})}box(x+.13,1.30,z-.02,.34,.90,.12,M.brown).rotation.y=-.14}
-sideTable(-.98,11);coatRack(.98,30);mirror(-1,52);radiator(1,62);sideTable(.97,84);mirror(1,75);radiator(-1,108);coatRack(.98,124);
-
-/* ------------------------------------------------------------
-   PAINTINGS — proper wall-mounted planes, bright enough to read
-   ------------------------------------------------------------ */
-const clickable=[];
-const artNames=['The Orange Hour','A Quiet December','The Night Feeling','Anemoia','After Midnight','Somewhere Familiar','The Empty Road','Rain at 2 AM','Lights Left On','A House Across the Street','Before Everyone Wakes','The Last Car Home','Quiet Weather','November Window','A Place I Remember','Between Two Streets','The Last Porch Light','Someone Was Here'];
-const artPalettes=[['#1a2431','#667c91','#d0a478'],['#202a23','#66756a','#d0b687'],['#302129','#805d69','#dcb392'],['#182631','#4d6a7f','#d2a271'],['#252922','#748067','#c9a47e'],['#30231f','#7b5e50','#d5ab84'],['#1b2228','#5b7180','#aeb9b6'],['#32232c','#765262','#c79075']];
-const paintingTextureCache=new Map();
-function paintingCanvas(seed){
-  const cacheKey=Math.abs(seed)%18;
-  if(paintingTextureCache.has(cacheKey)) return paintingTextureCache.get(cacheKey);
-  const r=seeded(cacheKey*7919+17),c=document.createElement('canvas');c.width=480;c.height=610;const x=c.getContext('2d');const p=artPalettes[cacheKey%artPalettes.length];const g=x.createLinearGradient(0,0,0,610);g.addColorStop(0,p[0]);g.addColorStop(.62,p[1]);g.addColorStop(1,p[2]);x.fillStyle=g;x.fillRect(0,0,480,610);
-  const mode=seed%10;x.fillStyle='rgba(7,10,13,.78)';x.fillRect(0,402,480,208);
-  if(mode===0||mode===4||mode===8){x.fillStyle='#1b1e1e';x.beginPath();x.moveTo(118,404);x.lineTo(368,404);x.lineTo(304,248);x.lineTo(215,248);x.closePath();x.fill();x.fillStyle='#2c2725';x.fillRect(118,218,248,120);x.beginPath();x.moveTo(82,218);x.lineTo(242,100);x.lineTo(408,218);x.closePath();x.fill();x.fillStyle='#e2b26c';x.fillRect(158,252,50,58);x.fillRect(284,252,50,58)}
-  else if(mode===1||mode===5){x.fillStyle='#192631';x.fillRect(58,86,364,330);x.strokeStyle='rgba(210,223,231,.38)';x.lineWidth=4;for(let i=0;i<35;i++){const px=72+r()*330,py=98+r()*288;x.beginPath();x.moveTo(px,py);x.lineTo(px-7,py+20+r()*45);x.stroke()}x.fillStyle='#e8bc77';x.fillRect(292,246,76,90)}
-  else if(mode===2||mode===6){x.fillStyle='#171d20';x.fillRect(80,230,320,162);x.fillStyle='#5a554e';x.fillRect(132,194,218,45);x.fillStyle='#dba96b';x.fillRect(170,244,142,38);for(let i=0;i<7;i++){x.fillStyle='#dfb474';x.fillRect(34+i*63,438+r()*15,4,4)}}
-  else if(mode===3||mode===7){x.fillStyle='#202629';x.fillRect(82,238,316,125);x.fillStyle='#282326';x.beginPath();x.moveTo(54,238);x.lineTo(240,112);x.lineTo(426,238);x.closePath();x.fill();x.fillStyle='#ecc17b';x.fillRect(173,278,48,60);x.fillRect(265,278,48,60)}
-  else{x.fillStyle='#171c1e';x.fillRect(0,330,480,280);x.fillStyle='#2d2825';x.fillRect(105,215,270,120);x.fillStyle='#d5a36c';x.fillRect(170,240,55,44);x.fillRect(255,240,55,44);x.fillStyle='#ced4d1';x.beginPath();x.ellipse(240,350,160,52,0,0,Math.PI*2);x.fill()}
-  for(let i=0;i<850;i++){x.fillStyle=`rgba(255,255,255,${.006+r()*.018})`;x.fillRect(r()*480,r()*610,1,1)}
-  const v=x.createLinearGradient(0,0,0,610);v.addColorStop(0,'rgba(255,255,255,.05)');v.addColorStop(.7,'rgba(255,255,255,0)');v.addColorStop(1,'rgba(0,0,0,.14)');x.fillStyle=v;x.fillRect(0,0,480,610);
-  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);paintingTextureCache.set(cacheKey,t);return t;
-}
-function addPainting(group,x,y,z,rotationY,seed,scale=1,note='A quiet little piece from the gallery.'){
-  const w=1.02*scale,h=1.30*scale,t=.055*scale;
-  const art=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:paintingCanvas(seed),roughness:.76,emissive:0x2b1d18,emissiveIntensity:.26,side:THREE.DoubleSide}));
-  art.position.set(x,y,z);art.rotation.y=rotationY;group.add(art);
-  const onSideWall=Math.abs(Math.abs(rotationY)-Math.PI/2)<.25;
-  if(onSideWall){box(x,y+h/2+.035,z,t,.07,w+.12,M.darkWood,group);box(x,y-h/2-.035,z,t,.07,w+.12,M.darkWood,group);box(x,y,z-w/2-.035,.07,h+.12,t,M.darkWood,group);box(x,y,z+w/2+.035,.07,h+.12,t,M.darkWood,group)}
-  else{box(x,y+h/2+.035,z,w+.12,.07,t,M.darkWood,group);box(x,y-h/2-.035,z,w+.12,.07,t,M.darkWood,group);box(x-w/2-.035,y,z,.07,h+.12,t,M.darkWood,group);box(x+w/2+.035,y,z,.07,h+.12,t,M.darkWood,group)}
-  art.userData.title=artNames[(seed-1)%artNames.length];art.userData.note=note;art.userData.painting=true;clickable.push(art);
-  if(group.userData && group.userData.isRoom)group.userData.paintCount++;
-  return art;
+for(let i=0,z=4;z<130;z+=7.6){
+  hallwayLamp(-1,z,i++);
+  hallwayLamp(1,z+3.8,i++);
 }
 
-/* Hall gallery — sparse, intentional rhythm. */
-let hallSeed=1000;for(const z of[7.2,14.0,23.2,29.8,38.0,47.2,57.2,66.0,75.2,85.0,94.7,104.8,114.8,124.7])addPainting(scene,-1.31,2.02,z,Math.PI/2,hallSeed++,.58,'A night scene encountered along the old manor corridor.');for(const z of[4.2,11.0,20.4,34.2,42.5,52.0,61.4,72.4,82.4,91.8,101.5,110.8,121.9,128.4])addPainting(scene,1.31,2.02,z,-Math.PI/2,hallSeed++,.58,'A quiet work hanging between the old brass lamps.');
+/* one slightly dead fixture: believable, not pitch-black */
+box(0,4.56,79.5,.42,.05,.42,cmat(0x5c5148,.55),scene,false,true);
+
+/* hallway details */
+function sideTableHall(x,z){
+  box(x,.76,z,.60,.10,.44,M.wood);
+  for(const dx of[-.22,.22])for(const dz of[-.14,.14])box(x+dx,.38,z+dz,.05,.72,.05,M.darkWood);
+  cyl(x,.93,z,.058,.13,M.paper,12);
+}
+function mirrorHall(side,z){
+  const x=side*1.285;
+  box(x,2.12,z,.08,1.72,1.02,M.darkWood);
+  box(x+side*.045,2.12,z,.025,1.50,.80,cmat(0x69747b,.17),scene,false,true);
+}
+function radiatorHall(side,z){
+  const x=side*1.30;
+  box(x,.48,z,.13,.62,.92,M.metal);
+  for(let i=0;i<6;i++)box(x-side*.078,.48,z-.34+i*.135,.05,.48,.065,M.brass,scene,false,true);
+}
+function coatHall(x,z){
+  cyl(x,.96,z,.045,1.90,M.darkWood,12);
+  for(let i=0;i<5;i++){const a=i*Math.PI*2/5;cyl(x+Math.cos(a)*.20,1.83,z+Math.sin(a)*.20,.024,.36,M.darkWood,10,scene,{z:-a*.2});}
+  box(x+.13,1.32,z,.34,.90,.12,M.brown).rotation.y=-.14;
+}
+function littlePlantHall(x,z){
+  cyl(x,.37,z,.17,.24,M.paper,14);
+  for(let i=0;i<6;i++)sphere(x+Math.cos(i*1.05)*.12,.73,z+Math.sin(i*1.05)*.12,.095,M.greenery);
+}
+sideTableHall(-.97,10.5);
+coatHall(.98,29.5);
+mirrorHall(-1,52.5);
+radiatorHall(1,62.5);
+sideTableHall(.97,84.5);
+mirrorHall(1,75);
+radiatorHall(-1,108);
+coatHall(.98,124);
+littlePlantHall(-.94,97.4);
+
+/* a handful of purposeful hallway artworks, leaving breathing room */
+let hallSeed=1400;
+for(const z of [6.8,13.8,23.0,31.6,38.2,48.2,57.2,66.4,76.0,86.6,94.0,103.6,113.8,125.0]) oldFrame(-1,z,hallSeed++);
+for(const z of [4.2,11.0,20.2,27.0,36.0,43.8,53.3,62.0,72.7,82.5,91.0,100.8,110.5,121.5,128.2]) oldFrame(1,z,hallSeed++);
 
 /* ------------------------------------------------------------
    ROOM SHELL
    ------------------------------------------------------------ */
-function roomShell(center,side,wallMaterial=M.wall){const g=new THREE.Group();g.userData.isRoom=true;g.userData.paintCount=0;scene.add(g);const inner=side*HALL_HALF,outer=side*(HALL_HALF+ROOM_W),cx=side*(HALL_HALF+ROOM_W/2),a=center-ROOM_L/2,b=center+ROOM_L/2;box(cx,-.07,center,ROOM_W,.14,ROOM_L,M.wood,g,false,true);box(cx,ROOM_H+.02,center,ROOM_W,.16,ROOM_L,M.darkWood,g,false,true);box(outer,ROOM_H/2,center,.18,ROOM_H,ROOM_L,wallMaterial,g,false,true);box(cx,ROOM_H/2,a,ROOM_W,ROOM_H,.18,wallMaterial,g,false,true);box(cx,ROOM_H/2,b,ROOM_W,ROOM_H,.18,wallMaterial,g,false,true);box(outer-side*.11,.56,center,.10,.12,ROOM_L,M.darkWood,g,false,true);box(outer-side*.11,4.43,center,.11,.17,ROOM_L,M.wood,g,false,true);return{g,center,side,inner,outer,cx,a,b,ceiling:g.children[1]}}
+function roomShell(center,side,wallMaterial=M.wall){
+  const g=new THREE.Group();
+  g.userData.isRoom=true;
+  g.userData.paintCount=0;
+  scene.add(g);
+  const inner=side*HALL_HALF;
+  const outer=side*(HALL_HALF+ROOM_W);
+  const cx=side*(HALL_HALF+ROOM_W/2);
+  const a=center-ROOM_L/2;
+  const b=center+ROOM_L/2;
 
-function roomLights(room,type){const colors={cinema:0x9fc5df,cottage:0xffc98a,snow:0x9fbad1,street:0x9dbbd0,horror:0xd0ad91};const col=colors[type]||0xffddbd;for(const spec of[[room.cx,3.65,room.center-3.5,.92,11],[room.cx,2.8,room.center+4.5,.58,9],[room.outer-room.side*.9,2.8,room.center-6,.42,8]]){const l=new THREE.PointLight(col,spec[3],spec[4],2);l.position.set(spec[0],spec[1],spec[2]);room.g.add(l)}box(room.cx,4.25,room.center,.72,.07,.72,cmat(0xffd9ad,.35,col,.7),room.g,false,true)}
+  box(cx,-.07,center,ROOM_W,.14,ROOM_L,M.wood,g,false,true);
+  const ceiling=box(cx,ROOM_H+.02,center,ROOM_W,.16,ROOM_L,M.darkWood,g,false,true);
+  box(outer,ROOM_H/2,center,.18,ROOM_H,ROOM_L,wallMaterial,g,false,true);
+  box(cx,ROOM_H/2,a,ROOM_W,ROOM_H,.18,wallMaterial,g,false,true);
+  box(cx,ROOM_H/2,b,ROOM_W,ROOM_H,.18,wallMaterial,g,false,true);
+
+  box(outer-side*.11,.56,center,.10,.12,ROOM_L,M.darkWood,g,false,true);
+  box(outer-side*.11,4.43,center,.11,.17,ROOM_L,M.wood,g,false,true);
+
+  /* simple floor-board seams */
+  for(let z=a+.5;z<b;z+=1.9){
+    box(cx,.012,z,ROOM_W-.2,.022,.026,M.darkWood,g,false,true);
+  }
+
+  addCollider(outer-side*.10,outer+side*.02,a,b);
+
+  return{g,center,side,inner,outer,cx,a,b,ceiling};
+}
+
+/* ------------------------------------------------------------
+   PAINTING SYSTEM — canvas-like, varied night scenes
+   ------------------------------------------------------------ */
+const clickable=[];
+const artNames=[
+  'The Orange Hour','A Quiet December','The Night Feeling','Anemoia',
+  'After Midnight','Somewhere Familiar','The Empty Road','Rain at 2 AM',
+  'Lights Left On','A House Across the Street','Before Everyone Wakes',
+  'The Last Car Home','Quiet Weather','November Window','A Place I Remember',
+  'Between Two Streets','The Last Porch Light','Someone Was Here'
+];
+
+const artPalette=[
+  ['#101820','#51687b','#c99c6c'],
+  ['#1b211e','#5f6b62','#c9ae82'],
+  ['#211a20','#73505d','#cf9a7b'],
+  ['#121c25','#466278','#d1a06f'],
+  ['#24231f','#69725e','#c7a27b'],
+  ['#211b18','#6b5145','#c99570'],
+  ['#171d22','#506674','#a7b5b3'],
+  ['#271c22','#684656','#c2876f']
+];
+const artCache=new Map();
+
+function makeArtTexture(seed){
+  const key=Math.abs(seed)%24;
+  if(artCache.has(key))return artCache.get(key);
+
+  const r=seeded(key*7919+31);
+  const c=document.createElement('canvas');
+  c.width=420;c.height=560;
+  const x=c.getContext('2d');
+  const p=artPalette[key%artPalette.length];
+  const g=x.createLinearGradient(0,0,0,560);
+  g.addColorStop(0,p[0]);g.addColorStop(.58,p[1]);g.addColorStop(1,p[2]);
+  x.fillStyle=g;x.fillRect(0,0,420,560);
+
+  /* distinct composition families */
+  const mode=key%12;
+  x.fillStyle='rgba(7,10,12,.70)';
+  x.fillRect(0,370,420,190);
+
+  if(mode===0||mode===5){
+    x.fillStyle='#24282b';
+    x.beginPath();x.moveTo(116,375);x.lineTo(300,375);x.lineTo(267,244);x.lineTo(188,244);x.closePath();x.fill();
+    x.fillStyle='#302a27';x.fillRect(92,218,232,132);
+    x.beginPath();x.moveTo(63,218);x.lineTo(208,105);x.lineTo(356,218);x.closePath();x.fill();
+    x.fillStyle='#e1b16c';x.fillRect(135,256,42,53);x.fillRect(240,256,42,53);
+  }
+  else if(mode===1||mode===6){
+    x.fillStyle='#182632';x.fillRect(42,60,336,318);
+    x.strokeStyle='rgba(215,228,235,.40)';x.lineWidth=3;
+    for(let i=0;i<42;i++){const px=55+r()*320,py=72+r()*275;x.beginPath();x.moveTo(px,py);x.lineTo(px-6,py+18+r()*34);x.stroke()}
+    x.fillStyle='#ecc17b';x.fillRect(270,230,70,90);
+  }
+  else if(mode===2||mode===7){
+    x.fillStyle='#161a1d';x.fillRect(55,252,312,116);
+    x.fillStyle='#635b51';x.fillRect(96,215,220,43);
+    x.fillStyle='#dcae72';x.fillRect(130,266,150,40);
+    x.fillStyle='#e2b979';
+    for(let i=0;i<6;i++)x.fillRect(38+i*66,420+r()*10,4,4);
+  }
+  else if(mode===3||mode===8){
+    x.fillStyle='#202629';x.fillRect(65,235,290,140);
+    x.fillStyle='#2d2725';x.beginPath();x.moveTo(42,235);x.lineTo(210,112);x.lineTo(380,235);x.closePath();x.fill();
+    x.fillStyle='#efc17c';x.fillRect(136,278,42,58);x.fillRect(242,278,42,58);
+  }
+  else if(mode===4||mode===9){
+    x.fillStyle='#171c20';x.fillRect(55,84,310,310);
+    x.fillStyle='#6f665d';x.fillRect(104,300,212,70);
+    x.fillStyle='#e8bc79';x.fillRect(235,155,82,120);
+    x.fillStyle='#f7d999';x.fillRect(256,175,40,78);
+  }
+  else{
+    x.fillStyle='#171b1d';x.fillRect(0,322,420,238);
+    x.fillStyle='#2b2825';x.fillRect(111,210,198,130);
+    x.beginPath();x.moveTo(86,210);x.lineTo(210,119);x.lineTo(335,210);x.closePath();x.fill();
+    x.fillStyle='#dbab6c';x.fillRect(145,244,46,55);x.fillRect(226,244,46,55);
+    x.fillStyle='rgba(214,221,218,.12)';x.beginPath();x.ellipse(210,360,160,50,0,0,Math.PI*2);x.fill();
+  }
+
+  /* subtle canvas weave */
+  for(let i=0;i<900;i++){
+    x.fillStyle=`rgba(255,255,255,${.004+r()*.015})`;
+    x.fillRect(r()*420,r()*560,1,1);
+  }
+  const v=x.createLinearGradient(0,0,0,560);
+  v.addColorStop(0,'rgba(255,255,255,.035)');
+  v.addColorStop(.72,'rgba(255,255,255,0)');
+  v.addColorStop(1,'rgba(0,0,0,.10)');
+  x.fillStyle=v;x.fillRect(0,0,420,560);
+
+  const t=new THREE.CanvasTexture(c);
+  t.encoding=THREE.sRGBEncoding;
+  t.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);
+  artCache.set(key,t);
+  return t;
+}
+
+function addPainting(group,x,y,z,rotationY,seed,scale=1,note='A quiet piece from the gallery.'){
+  const w=1.00*scale;
+  const h=1.28*scale;
+  const frame=0.065*scale;
+
+  const art=new THREE.Mesh(
+    new THREE.PlaneGeometry(w,h),
+    new THREE.MeshStandardMaterial({
+      map:makeArtTexture(seed),
+      roughness:.84,
+      emissive:0x241912,
+      emissiveIntensity:.18,
+      side:THREE.DoubleSide
+    })
+  );
+
+  art.position.set(x,y,z);
+  art.rotation.y=rotationY;
+  group.add(art);
+
+  const sideWall=Math.abs(Math.abs(rotationY)-Math.PI/2)<.2;
+
+  if(sideWall){
+    box(x,y+h/2+.035,z,frame,.075,w+.12,M.darkWood,group,false,true);
+    box(x,y-h/2-.035,z,frame,.075,w+.12,M.darkWood,group,false,true);
+    box(x,y,z-w/2-.035,.075,h+.12,frame,M.darkWood,group,false,true);
+    box(x,y,z+w/2+.035,.075,h+.12,frame,M.darkWood,group,false,true);
+  }else{
+    box(x,y+h/2+.035,z,w+.12,.075,frame,M.darkWood,group,false,true);
+    box(x,y-h/2-.035,z,w+.12,.075,frame,M.darkWood,group,false,true);
+    box(x-w/2-.035,y,z,.075,h+.12,frame,M.darkWood,group,false,true);
+    box(x+w/2+.035,y,z,.075,h+.12,frame,M.darkWood,group,false,true);
+  }
+
+  art.userData.title=artNames[Math.abs(seed)%artNames.length];
+  art.userData.note=note;
+  clickable.push(art);
+  if(group.userData?.isRoom)group.userData.paintCount++;
+  return art;
+}
+
+function outerPaint(room,y,z,seed,scale,note){
+  addPainting(
+    room.g,
+    room.outer-room.side*.055,
+    y,z,
+    -room.side*Math.PI/2,
+    seed,
+    scale,
+    note
+  );
+}
+function frontPaint(room,y,z,seed,scale,note){
+  addPainting(room.g,room.cx,y,room.a+.055,0,seed,scale,note);
+}
+function backPaint(room,y,z,seed,scale,note){
+  addPainting(room.g,room.cx,y,room.b-.055,Math.PI,seed,scale,note);
+}
+
+function practicalRoomLight(g,x,y,z,color,intensity,dist){
+  sphere(x,y,z,.075,cmat(color,.20,color,2.1),g);
+  const l=new THREE.PointLight(color,intensity,dist,2);
+  l.position.set(x,y,z);
+  l.castShadow=true;
+  g.add(l);
+  return l;
+}
+
+function salonRow(room,wall,count,startSeed,y=2.0,scale=.5,note='A framed night scene from the collection.'){
+  const span=ROOM_L-3.3;
+  for(let i=0;i<count;i++){
+    const z=wall==='outer'
+      ?room.a+1.7+i*(span/(count-1))
+      :null;
+
+    if(wall==='outer')outerPaint(room,y,z,startSeed+i,scale,note);
+    else if(wall==='front')frontPaint(room,y,0,startSeed+i,scale,note);
+    else if(wall==='back')backPaint(room,y,0,startSeed+i,scale,note);
+  }
+}
 
 /* ------------------------------------------------------------
    LOBBY 1 — ABANDONED CINEMA
    ------------------------------------------------------------ */
-function buildCinema(r){const g=r.g,s=r.side;const floor=box(r.cx,.012,r.center,ROOM_W-.18,.035,ROOM_L-.18,new THREE.MeshStandardMaterial({map:rug(41,'#33242b'),roughness:1}),g,false,true);
-  /* screen */box(r.outer-s*.12,2.72,r.center,.24,2.95,5.4,M.darkWood,g);box(r.outer-s*.27,2.72,r.center,.035,2.56,4.90,cmat(0x7c909e,.66,0x273b48,.42),g,false,true);box(r.outer-s*.36,4.12,r.center,.12,.13,5.58,M.brass,g,false,true);
-  for(const zz of[-2.95,-2.42,2.42,2.95])box(r.outer-s*.31,2.62,r.center+zz,.18,3.14,.43,M.burgundy,g);
-  const screenGlow=new THREE.PointLight(0x8bb6d5,1.0,8,2);screenGlow.position.set(r.outer-s*.8,2.7,r.center);g.add(screenGlow);
-  /* projector */const px=r.inner+s*7.5;box(px,2.35,r.center,.82,.46,.62,M.metal,g);cyl(px+s*.4,2.35,r.center,.18,.18,M.brass,18,g,{x:Math.PI/2});const pl=new THREE.SpotLight(0xb9d8ec,1.0,20,Math.PI/8,.7,1.3);pl.position.set(px-s*.18,2.46,r.center);pl.target.position.set(r.outer-s*.25,2.7,r.center);g.add(pl,pl.target);
-  /* rows */for(let row=0;row<4;row++){const xx=r.inner+s*(3.0+row*1.55);for(let col=-2;col<=2;col++){if((row===2&&col===2)||(row===3&&col===-1))continue;const seat=new THREE.Group();seat.position.set(xx,0,r.center+col*1.02+(row%2?.05:0));seat.rotation.y=s<0?Math.PI/2:-Math.PI/2;g.add(seat);box(0,.40,0,.72,.18,.70,M.burgundy,seat);box(0,.87,-.27,.72,.92,.13,M.burgundy,seat);for(const dx of[-.24,.24])for(const dz of[-.23,.23])box(dx,.17,dz,.07,.34,.07,M.darkWood,seat)}}
-  /* foyer ticket booth + concession */const fy=r.a+3.0;box(r.inner+s*.78,1.20,fy,1.35,2.4,2.4,M.darkWood,g);box(r.inner+s*.84,1.76,fy,.05,.72,1.35,cmat(0x22252a,.5),g,false,true);warmLight(g,r.inner+s*.72,fy-.55,0xffc37d,.55,4);
-  const cz=r.b-2.4;box(r.inner+s*1.05,.82,cz,1.5,.15,3.0,M.wood,g);box(r.inner+s*1.05,.43,cz,1.35,.77,2.82,M.darkWood,g);box(r.inner+s*.98,1.52,cz-.75,.60,1.10,.54,M.burgundy,g);box(r.inner+s*.98,2.05,cz-.75,.52,.38,.46,M.glass,g,false,true);
-  /* 50 paintings arranged as an actual salon-like gallery */let n=0;const rows=[1.70,2.95,4.20];for(const y of rows){for(let i=0;i<10;i++){const z=r.a+2.6+i*1.85;if(n>=50)break;addPainting(g,r.outer-s*.13,y,z,-s*Math.PI/2,2000+n,.46+(y===2.95?.02:0),'An artwork hanging inside the abandoned cinema.');n++}if(n>=50)break}for(let i=0;n<50&&i<20;i++){const z=r.a+2.2+(i%10)*2.0;const x=r.inner+s*(2.0+(i>=10?1.2:0));if(i%10===0)box(x,2.18,r.center,0.10,4.0,10.5,M.darkWood,g);addPainting(g,x-s*.06,1.82+(i>=10?1.2:0),z,-s*Math.PI/2,2100+n,.41,'A smaller framed work on the cinema display partitions.');n++}
-  addParticles(g,r,'dust',95,0xded4c8,.018,.33);
+function buildCinema(r){
+  const g=r.g,s=r.side;
+
+  /* dark but readable cinema carpet */
+  box(r.cx,.015,r.center,ROOM_W-.20,.035,ROOM_L-.20,new THREE.MeshStandardMaterial({map:rug(41,'#3c252d'),roughness:1}),g,false,true);
+  box(r.cx,.036,r.center,1.55,.022,ROOM_L-.4,new THREE.MeshStandardMaterial({map:rug(42,'#5b3440'),roughness:1}),g,false,true);
+
+  /* screen on the far wall — logical sight line from the seats */
+  box(r.cx,r.center*0+2.70,r.b-.14,6.15,.30,.32,M.darkWood,g);
+  box(r.cx,2.70,r.b-.28,5.45,.05,.04,cmat(0x8997a0,.73,0x25343e,.35),g,false,true);
+  box(r.cx,4.10,r.b-.33,5.75,.12,.10,M.brass,g,false,true);
+
+  /* curtains */
+  for(const x of[-2.98,2.98]){
+    const c=box(r.cx+x,2.62,r.b-.34,.48,3.1,.26,M.burgundy,g);
+    c.rotation.z=x<0?.035:-.035;
+  }
+  for(let i=0;i<7;i++)box(r.cx-2.72+i*.88,2.58,r.b-.30,.18,3.08,.20,M.burgundy,g);
+
+  const screenGlow=practicalRoomLight(g,r.cx,2.7,r.b-.70,0x93bedb,.80,7.5);
+  screenGlow.castShadow=false;
+
+  /* projector at rear of the auditorium */
+  const px=r.cx;
+  const pz=r.a+3.3;
+  box(px,2.45,pz,.84,.48,.64,M.metal,g);
+  cyl(px,2.45,pz-.39,.18,.18,M.brass,18,g,{x:Math.PI/2});
+  const projector=new THREE.SpotLight(0xb8d7eb,.95,20,Math.PI/9,.72,1.3);
+  projector.position.set(px,2.52,pz+.28);
+  projector.target.position.set(r.cx,2.72,r.b-.50);
+  g.add(projector,projector.target);
+
+  /* seats: all face the screen, with realistic spacing and a few missing */
+  for(let row=0;row<4;row++){
+    const zz=r.a+7.0+row*2.15;
+    for(let col=-2;col<=2;col++){
+      if((row===1&&col===2)||(row===3&&col===-1)||(row===3&&col===1))continue;
+      const seat=new THREE.Group();
+      seat.position.set(r.cx+col*1.05,.0,zz);
+      seat.rotation.y=0;
+      g.add(seat);
+      box(0,.40,0,.72,.18,.70,M.burgundy,seat);
+      box(0,.88,-.27,.72,.92,.13,M.burgundy,seat);
+      for(const dx of[-.24,.24])for(const dz of[-.23,.23])box(dx,.17,dz,.07,.34,.07,M.darkWood,seat);
+    }
+  }
+
+  /* aisle lights */
+  for(let i=0;i<5;i++){
+    box(r.cx,.11,r.a+6.2+i*2.15,.07,.04,.07,cmat(0xffd38a,.25,0xffa84c,2.1),g,false,true);
+  }
+
+  /* old foyer at the entrance end */
+  const fy=r.a+1.8;
+  box(r.outer-s*.10,1.25,fy,.45,2.4,3.3,M.darkWood,g);
+  box(r.outer-s*.18,1.70,fy,.05,.70,2.1,cmat(0x29262b,.55),g,false,true);
+  practicalRoomLight(g,r.outer-s*.40,2.45,fy,0xffc47c,.50,4.2);
+
+  /* concession counter */
+  const cz=r.a+4.3;
+  box(r.inner+s*1.0,.82,cz,1.45,.15,2.5,M.wood,g);
+  box(r.inner+s*1.0,.43,cz,1.30,.78,2.30,M.darkWood,g);
+  box(r.inner+s*.93,1.50,cz-.72,.62,1.10,.54,M.burgundy,g);
+  box(r.inner+s*.93,2.04,cz-.72,.52,.40,.46,M.glass,g,false,true);
+
+  /* poster strip in foyer */
+  for(let i=0;i<4;i++){
+    addPainting(g,r.inner+s*.08,2.05,r.a+2.1+i*.85,s*Math.PI/2,3000+i,.42,'A faded cinema poster from the theater’s final years.');
+  }
+
+  /* 50 gallery works: 30 on the outer wall + 20 on two freestanding gallery partitions */
+  let n=0;
+  for(const y of[1.45,2.82]){
+    for(let i=0;i<13;i++){
+      outerPaint(r,y,r.a+1.65+i*((ROOM_L-3.3)/12),3000+n,.48,'One of the paintings displayed inside the abandoned cinema.');
+      n++;
+    }
+  }
+
+  for(const pX of[r.inner+s*2.55,r.inner+s*4.0]){
+    box(pX,2.12,r.center,.13,4.0,8.2,M.darkWood,g);
+    for(let i=0;i<10;i++){
+      addPainting(g,pX-s*.08,2.08,r.a+1.55+i*2.02,-s*Math.PI/2,3200+n,.41,'A smaller work on a temporary wooden gallery wall inside the old cinema.');
+      n++;
+    }
+  }
+
+  /* little ceiling lights keep the room readable */
+  for(const z of[r.a+7,r.center,r.b-5]){
+    practicalRoomLight(g,r.cx,4.02,z,0xffc98d,.38,5.8);
+  }
+
+  addParticles(g,r,'dust',70,0xd8cec1,.016,.22);
 }
 
 /* ------------------------------------------------------------
    LOBBY 2 — COZY COTTAGE
    ------------------------------------------------------------ */
-function buildCottage(r){const g=r.g,s=r.side;box(r.cx,.01,r.center,ROOM_W-.15,.035,ROOM_L-.15,new THREE.MeshStandardMaterial({map:rug(55,'#695043'),roughness:1}),g,false,true);
-  const fx=r.outer-s*.12;box(fx,1.55,r.center,.38,3.05,5.35,M.brick,g);box(fx-s*.23,.43,r.center,.55,.18,5.76,M.stone,g);box(fx-s*.25,2.95,r.center,.55,.17,5.85,M.wood,g);box(fx-s*.31,1.43,r.center,.05,1.55,2.95,cmat(0x170f0b,1),g,false,true);for(let i=0;i<4;i++)lineBetween(new THREE.Vector3(fx-s*.48,.68+i*.08,r.center-.64+i*.32),new THREE.Vector3(fx-s*.84,.68+i*.08,r.center+.60-i*.28),.065,M.darkWood,g);
-  const fm=cmat(0xffa34b,.27,0xff681d,2.2);const f1=sphere(fx-s*.74,1.03,r.center-.18,.24,fm,g);f1.scale.set(.7,1.8,.6);const f2=sphere(fx-s*.88,.96,r.center+.28,.17,fm,g);f2.scale.set(.8,1.55,.6);const fl=new THREE.PointLight(0xff8d43,1.9,8.6,2);fl.position.set(fx-s*.88,1.15,r.center);fl.castShadow=true;g.add(fl);
-  sofa(g,r.cx-s*3.0,r.center+.85,M.olive,s<0?Math.PI/2:-Math.PI/2);chair(g,r.cx-s*4.75,r.center-1.55,M.brown,s<0?.95:-.95);chair(g,r.cx-s*3.05,r.center-2.0,M.olive,s<0?1.05:-1.05);table(g,r.cx-s*3.8,r.center-.50);floorLamp(g,r.cx-s*5.1,r.center+2.15);books(g,r.cx-s*5.85,r.center-2.0,s);
-  const wz=r.center+3.7;windowUnit(g,r.outer-s*.14,2.28,wz,3.25,2.35,0x344752);box(r.outer-s*.24,2.28,wz-1.72,.16,2.48,.48,M.burgundy,g);box(r.outer-s*.24,2.28,wz+1.72,.16,2.48,.48,M.burgundy,g);const wg=new THREE.PointLight(0x7799ab,.38,5.5,2);wg.position.set(r.outer-s*.65,2.25,wz);g.add(wg);rain(g,r,.35);
-  /* family photographs and ceramics */box(r.inner+s*.10,2.05,r.a+2.2,.045,.76,.56,M.darkWood,g);box(r.inner+s*.13,2.05,r.a+2.2,.02,.62,.42,M.paper,g,false,true);cyl(r.cx-s*3.82,.74,r.center-.47,.065,.11,M.paper,12,g);cyl(r.cx-s*5.42,.74,r.center+2.2,.09,.18,M.paper,12,g);
-  let n=0;for(let i=0;i<12;i++){addPainting(g,r.outer-s*.13,1.88+(i%3===0?1.0:0),r.a+1.7+i*1.82, -s*Math.PI/2,2200+n++,.53,'A quiet evening painting hanging naturally inside the cottage.')}for(let i=0;i<12;i++){addPainting(g,r.inner+s*.08,2.02,r.a+2.3+i*1.72,s*Math.PI/2,2250+n++,.46,'A smaller framed work tucked beside the warm cottage furniture.')}}
+function buildCottage(r){
+  const g=r.g,s=r.side;
+
+  box(r.cx,.01,r.center,ROOM_W-.15,.035,ROOM_L-.15,new THREE.MeshStandardMaterial({map:rug(55,'#705448'),roughness:1}),g,false,true);
+  box(r.cx,.036,r.center+1.0,7.4,.02,6.2,new THREE.MeshStandardMaterial({map:rug(56,'#76554a'),roughness:1}),g,false,true);
+
+  /* stone fireplace as focal point */
+  const fx=r.outer-s*.12;
+  box(fx,1.55,r.center,.42,3.12,5.45,M.brick,g);
+  box(fx-s*.25,.43,r.center,.58,.18,5.90,M.stone,g);
+  box(fx-s*.27,2.96,r.center,.56,.18,5.90,M.wood,g);
+  box(fx-s*.32,1.42,r.center,.05,1.55,2.95,cmat(0x160e0a,1),g,false,true);
+
+  for(let i=0;i<4;i++){
+    lineBetween(new THREE.Vector3(fx-s*.46,.67+i*.08,r.center-.64+i*.32),new THREE.Vector3(fx-s*.86,.67+i*.08,r.center+.59-i*.28),.068,M.darkWood,g);
+  }
+
+  const flameMat=cmat(0xffa550,.28,0xff6a1c,2.3);
+  const f1=sphere(fx-s*.73,1.00,r.center-.16,.25,flameMat,g);f1.scale.set(.72,1.8,.56);
+  const f2=sphere(fx-s*.88,.96,r.center+.27,.17,flameMat,g);f2.scale.set(.78,1.5,.56);
+  const fire=practicalRoomLight(g,fx-s*.88,1.17,r.center,0xff8b3d,1.65,8.5);
+
+  /* seating naturally faces fireplace */
+  sofa(g,r.cx-s*3.15,r.center+.88,M.olive,s<0?Math.PI/2:-Math.PI/2);
+  chair(g,r.cx-s*4.85,r.center-1.45,M.brown,s<0?.78:-.78);
+  chair(g,r.cx-s*3.1,r.center-1.95,M.olive,s<0?1.08:-1.08);
+  table(g,r.cx-s*3.78,r.center-.45);
+  floorLamp(g,r.cx-s*5.15,r.center+2.15);
+  books(g,r.cx-s*5.85,r.center+2.25,s);
+
+  /* window with curtains and warm room behind it */
+  const wz=r.center+3.75;
+  windowUnit(g,r.outer-s*.14,2.30,wz,3.20,2.35,0x354b53);
+  box(r.outer-s*.23,2.28,wz-1.72,.17,2.48,.48,M.burgundy,g);
+  box(r.outer-s*.23,2.28,wz+1.72,.17,2.48,.48,M.burgundy,g);
+  const windowGlow=practicalRoomLight(g,r.outer-s*.52,2.15,wz,0x779aad,.25,5.2);
+  windowGlow.castShadow=false;
+
+  /* small lived-in objects */
+  box(r.cx-s*3.95,.70,r.center-.50,.28,.035,.20,M.paper,g,false,true).rotation.y=-.12;
+  cyl(r.cx-s*3.45,.75,r.center-.39,.065,.11,M.paper,12,g);
+  cyl(r.cx-s*5.45,.76,r.center+2.27,.085,.17,M.paper,12,g);
+
+  /* 24 paintings, integrated into the actual cottage walls */
+  let n=0;
+  const sideRows=[1.72,3.05];
+  const outerSalonZ=[r.a+1.75,r.a+4.75,r.a+7.75,r.b-7.75,r.b-4.75,r.b-1.75];
+  for(const y of sideRows){
+    for(const z of outerSalonZ){
+      outerPaint(r,y,z,4000+n,.48,'A quiet evening painting hanging naturally inside the cottage.');n++;
+    }
+  }
+  for(let i=0;i<6;i++){
+    const x=r.cx-(3.15)+i*1.05;
+    addPainting(g,x,1.82,r.a+.05,0,4100+i,.46,'A framed work on the cottage entry wall.');n++;
+  }
+  for(let i=0;i<7;i++){
+    const x=r.cx-(3.15)+i*1.05;
+    addPainting(g,x,1.86,r.b-.05,Math.PI,4200+i,.46,'A small painting displayed above the cottage’s books and furniture.');n++;
+  }
+
+  /* warm practical lights */
+  practicalRoomLight(g,r.cx-s*4.8,2.35,r.center+2.1,0xffc47b,.50,4.8);
+  practicalRoomLight(g,r.cx-s*5.2,3.65,r.center-4.6,0xffc98b,.34,4.5);
+  addParticles(g,r,'dust',55,0xd7cbbd,.015,.18);
+  rain(g,r,.30);
+}
 
 /* ------------------------------------------------------------
    LOBBY 3 — SNOWY RURAL NIGHT
    ------------------------------------------------------------ */
-function buildSnow(r){const g=r.g,s=r.side;r.ceiling.visible=false;box(r.cx,4.35,r.center,14.8,.05,23.5,cmat(0x26364a,1,0x101b29,.45),g,false,true);box(r.cx,-.02,r.center,14.8,.08,23.5,M.snow,g,false,true);const pathX=r.inner+s*4.7;box(pathX,.035,r.center,2.0,.04,23.3,cmat(0x9ca5aa,1),g,false,true);
-  const hx=r.outer-s*3.0,hz=r.center-1.2;box(hx,1.26,hz,6.0,2.32,7.1,M.darkWood,g);box(hx-s*.12,2.70,hz,6.6,.33,7.55,M.darkWood,g);box(hx-s*.10,2.92,hz,6.72,.23,7.7,M.snow,g,false,true);box(r.inner+s*1.48,.42,hz,1.0,.18,4.2,M.wood,g);box(r.inner+s*1.48,2.42,hz,1.15,.18,4.5,M.darkWood,g);for(const zz of[hz-1.7,hz+1.7])cyl(r.inner+s*1.45,1.35,zz,.08,1.98,M.darkWood,12,g);for(let i=0;i<3;i++)box(r.inner+s*(1.08-i*.24),.22-i*.05,hz,.34,.16,2.9+i*.14,M.wood,g);
-  for(const zz of[hz-1.7,hz+1.7]){windowUnit(g,hx-s*3.02,1.68,zz,1.16,1.04,0xe3ad60,true);const wl=new THREE.PointLight(0xffb85c,.78,5.5,2);wl.position.set(hx-s*3.35,1.7,zz);g.add(wl)}
-  box(hx+s*1.42,3.35,hz-.82,.58,1.08,.55,M.brick,g);for(let i=0;i<5;i++)sphere(hx+s*1.42+Math.sin(i)*.06,3.93+i*.24,hz-.82,.14+i*.03,cmat(0xaab1b7,1),g).material.opacity=.12;
-  for(let i=0;i<8;i++)pine(g,r.inner+s*(4.1+(i%3)*2.1),r.a+1+i*2.7,.72+(i%3)*.2);for(let i=0;i<9;i++)cyl(r.inner+s*5.8,.53,r.a+1+i*2.55,.045,1.05,M.darkWood,10,g);lineBetween(new THREE.Vector3(r.inner+s*5.8,.78,r.a+1),new THREE.Vector3(r.inner+s*5.8,.78,r.b-1),.035,M.darkWood,g);lineBetween(new THREE.Vector3(r.inner+s*5.8,.39,r.a+1),new THREE.Vector3(r.inner+s*5.8,.39,r.b-1),.035,M.darkWood,g);
-  const lx=r.inner+s*3.15,lz=r.b-2.1;box(lx,.8,lz,.20,.36,.20,M.metal,g);sphere(lx,.82,lz,.055,cmat(0xffbf68,.2,0xff8430,2.0),g);const ll=new THREE.PointLight(0xffa653,.58,3.7,2);ll.position.set(lx,.82,lz);g.add(ll);
-  /* 24 paintings on weathered display boards */
-  let n=0;for(let i=0;i<24;i++){const bx=r.inner+s*(2.0+(i%4)*1.18);const z=r.a+2.6+Math.floor(i/4)*3.35;if(i%4===0)box(bx,2.05,z,.13,4.0,1.42,M.darkWood,g);addPainting(g,bx-s*.08,1.78+(i%4===0?1.05:0),z,-s*Math.PI/2,2300+n++,.45,'A winter night painting displayed on a weathered outdoor gallery board.')}addParticles(g,r,'snow',390,0xf2f6fa,.025,.72)}
+function buildSnow(r){
+  const g=r.g,s=r.side;
+
+  r.ceiling.visible=false;
+  r.g.children[2].visible=false;
+  r.g.children[3].visible=false;
+  r.g.children[4].visible=false;
+  /* the snow lobby is truly outdoors */
+
+  /* snow field */
+  box(r.cx,-.02,r.center,14.8,.08,23.5,M.snow,g,false,true);
+  box(r.cx,4.20,r.center,14.8,.05,23.5,cmat(0x29415a,1,0x152535,.28),g,false,true);
+
+  const pathX=r.inner+s*4.6;
+  box(pathX,.035,r.center,2.15,.035,23.0,cmat(0x979da2,1),g,false,true);
+  for(let i=0;i<12;i++){
+    box(pathX+s*((i%2)*.16-.08),.072,r.a+1.0+i*1.86,.19,.022,.48,cmat(0x777f86,1),g,false,true);
+  }
+
+  /* cabin in the distance */
+  const hx=r.outer-s*3.1,hz=r.center-1.2;
+  box(hx,1.25,hz,6.1,2.30,7.15,M.darkWood,g);
+  box(hx-s*.12,2.65,hz,6.65,.35,7.58,M.darkWood,g);
+  box(hx-s*.09,2.88,hz,6.78,.22,7.70,M.snow,g,false,true);
+
+  /* porch */
+  box(r.inner+s*1.55,.42,hz,1.10,.18,4.35,M.wood,g);
+  box(r.inner+s*1.54,2.44,hz,1.22,.18,4.58,M.darkWood,g);
+  for(const zz of[hz-1.74,hz+1.74])cyl(r.inner+s*1.50,1.35,zz,.08,1.96,M.darkWood,12,g);
+  for(let i=0;i<3;i++)box(r.inner+s*(1.12-i*.25),.21-i*.05,hz,.34,.15,2.95+i*.14,M.wood,g);
+
+  /* window warmth */
+  for(const zz of[hz-1.70,hz+1.70]){
+    windowUnit(g,hx-s*3.05,1.68,zz,1.18,1.05,0xe4ae62,true);
+    practicalRoomLight(g,hx-s*3.35,1.72,zz,0xffb75c,.68,5.3);
+  }
+
+  /* chimney + subtle smoke */
+  box(hx+s*1.45,3.34,hz-.82,.58,1.10,.55,M.brick,g);
+  for(let i=0;i<5;i++){
+    sphere(hx+s*1.45+Math.sin(i)*.05,3.95+i*.24,hz-.82+Math.cos(i)*.03,.13+i*.03,cmat(0xaeb5bc,1),g).material.opacity=.12;
+  }
+
+  /* pine trees with varied heights */
+  for(let i=0;i<10;i++)pine(g,r.inner+s*(4.0+(i%4)*1.95),r.a+1.1+i*2.35,.65+(i%4)*.18);
+
+  /* fence and wood pile */
+  for(let i=0;i<9;i++)cyl(r.inner+s*5.8,.53,r.a+1+i*2.55,.045,1.05,M.darkWood,10,g);
+  lineBetween(new THREE.Vector3(r.inner+s*5.8,.78,r.a+1),new THREE.Vector3(r.inner+s*5.8,.78,r.b-1),.035,M.darkWood,g);
+  lineBetween(new THREE.Vector3(r.inner+s*5.8,.39,r.a+1),new THREE.Vector3(r.inner+s*5.8,.39,r.b-1),.035,M.darkWood,g);
+
+  for(let i=0;i<5;i++)cyl(r.inner+s*6.0,.22+i*.16,r.b-3.0,.085,.95,M.darkWood,10,g,{z:Math.PI/2});
+
+  /* lantern */
+  const lx=r.inner+s*3.05,lz=r.b-2.15;
+  box(lx,.80,lz,.21,.37,.21,M.metal,g);
+  practicalRoomLight(g,lx,.84,lz,0xffa653,.52,3.8);
+
+  /* a covered rural art pavilion: this is why 24 paintings are outside */
+  const px=r.inner+s*1.9;
+  box(px,1.90,r.center,.30,3.55,15.8,wallMaterialForSnow(),g);
+  box(px,3.82,r.center,.72,.22,16.2,M.darkWood,g);
+  box(px,4.02,r.center,.78,.20,16.4,M.snow,g,false,true);
+
+  /* interior of the pavilion stays warm and protected from snow */
+  practicalRoomLight(g,px-s*.55,3.05,r.center,0xffc67d,.52,7.2);
+  practicalRoomLight(g,px-s*.55,2.70,r.center-5.0,0xffc67d,.40,5.2);
+  practicalRoomLight(g,px-s*.55,2.70,r.center+5.0,0xffc67d,.40,5.2);
+
+  /* 24 paintings on the protected pavilion wall */
+  for(let i=0;i<24;i++){
+    const z=r.a+1.35+i*((ROOM_L-2.7)/23);
+    addPainting(g,px-s*.17,2.00,z,-s*Math.PI/2,5000+i,.46,'A winter night painting protected beneath the rural gallery pavilion.');
+  }
+
+  /* snow banks / footprints */
+  for(let i=0;i<14;i++){
+    const x=r.inner+s*(2.5+(i%4)*2.55);
+    const z=r.a+.7+(i*1.72)%21.4;
+    sphere(x,.20,z,.48+(i%3)*.15,M.snow,g).scale.y=.42;
+  }
+
+  for(let i=0;i<15;i++){
+    const z=r.center-6+i*.46;
+    box(r.inner+s*(2.55+(i%2)*.22),.085,z,.13,.025,.24,cmat(0x899197,1),g,false,true).rotation.y=(i%2?.08:-.08);
+  }
+
+  addParticles(g,r,'snow',320,0xf0f5f7,.024,.66);
+}
+
+function wallMaterialForSnow(){
+  return new THREE.MeshStandardMaterial({
+    map:wood(95,true),
+    roughness:.96
+  });
+}
 
 /* ------------------------------------------------------------
-   LOBBY 4 — RESIDENTIAL STREET
+   LOBBY 4 — QUIET RESIDENTIAL STREET
    ------------------------------------------------------------ */
-function buildStreet(r){const g=r.g,s=r.side;r.ceiling.visible=false;box(r.cx,4.3,r.center,14.8,.05,23.5,cmat(0x273b49,1,0x12212c,.35),g,false,true);const roadX=r.cx-s*2.2;box(roadX,.02,r.center,4.8,.035,ROOM_L-.2,M.asphalt,g,false,true);for(const e of[-3.35,3.35])box(roadX,.055,r.center+e,1.40,.08,ROOM_L-.2,M.concrete,g,false,true);for(let i=0;i<11;i++)box(roadX,.055,r.a+1.5+i*2.02,.05,.025,1.0,cmat(0xc6b89e,.9),g,false,true);
-  house(g,roadX-s*3.45,r.center-4.7,.98,.03,false);house(g,roadX-s*3.55,r.center+4.2,.82,-.05,true);house(g,roadX+s*3.35,r.center-3.8,.90,.06,false);house(g,roadX+s*3.2,r.center+5.1,.78,-.04,true);for(let i=0;i<12;i++)sphere(roadX+s*(i%2?3.95:-3.95),.42,r.a+1+i*1.72,.40+(i%3)*.08,M.greenery,g).scale.y=.72;
-  const px=r.inner+s*2.25;cyl(px,2.48,r.a+4,.055,4.6,M.darkWood,10,g);box(px,4.25,r.a+4,.12,.10,1.55,M.darkWood,g);lineBetween(new THREE.Vector3(px,4.25,r.a+4),new THREE.Vector3(r.outer-s*.20,4.05,r.b-2.2),.014,M.metal,g);lineBetween(new THREE.Vector3(px,4.16,r.a+4),new THREE.Vector3(r.outer-s*.20,4.28,r.a+1.0),.014,M.metal,g);
-  for(const z of[r.a+2,r.center-1,r.center+7])streetLamp(g,roadX-s*2.54,z,s);car(g,roadX-s*1.65,r.center+1.2);mailbox(g,roadX+s*4.1,r.center-2.2);hydrant(g,roadX-s*4.1,r.center+5.4);
-  /* 24 paintings on purpose-built street exhibition boards */
-  let n=0;for(const bx of[roadX+s*4.75,roadX-s*4.75]){box(bx,2.02,r.center,.15,4.05,10.8,M.darkWood,g);for(let i=0;i<12;i++)addPainting(g,bx-s*.09,1.76+(i%4===0?1.0:0),r.a+1.55+i*1.98,-s*Math.PI/2,2400+n++,.43,'A quiet night painting presented beside the residential street.')}addParticles(g,r,'mist',70,0xb8c7ce,.018,.13)}
+function buildStreet(r){
+  const g=r.g,s=r.side;
+  r.ceiling.visible=false;
+  r.g.children[2].visible=false;
+  r.g.children[3].visible=false;
+  r.g.children[4].visible=false;
 
-/* ------------------------------------------------------------
-   LOBBY 5 — EERIE VICTORIAN
-   ------------------------------------------------------------ */
-function buildHorror(r){const g=r.g,s=r.side;box(r.cx,.01,r.center,ROOM_W-.1,.035,ROOM_L-.1,new THREE.MeshStandardMaterial({map:wood(77,true),roughness:1}),g,false,true);box(r.cx,.035,r.center,7.7,.025,9.4,new THREE.MeshStandardMaterial({map:rug(79,'#412933'),roughness:1}),g,false,true);
-  sofa(g,r.cx-s*3.5,r.center-2.0,new THREE.MeshStandardMaterial({map:fabric(82,'#71665d'),roughness:1}),.02);chair(g,r.cx-s*4.15,r.center+3.1,M.olive,.78);box(r.cx-s*4.9,.46,r.b-2.4,1.35,.60,.72,M.brown,g);floorLamp(g,r.cx-s*5.05,r.center+1.5);grandClock(g,r.outer-s*.30,r.center-4.6);box(r.outer-s*.30,1.28,r.center+3.5,.52,2.35,2.10,M.darkWood,g);for(let i=0;i<3;i++)box(r.outer-s*.57,.72+i*.50,r.center+3.5,.05,.06,1.78,M.brass,g,false,true);windowUnit(g,r.outer-s*.14,2.28,r.center+6.2,2.75,2.16,0x25282d);box(r.outer-s*.24,2.28,r.center+4.78,.16,2.34,.55,M.olive,g);candelabra(g,r.cx-s*3,r.center-5.45);box(r.cx-s*4.9,.48,r.b-2.4,1.36,.64,.72,M.brown,g);/* wrong-way chair */const q=chair(g,r.cx-s*4.1,r.center+3.25,M.olive,.79);q.rotation.z=.02;
-  /* 24 works in two salon rows; deliberately varied sizes */let n=0;for(let i=0;i<13;i++)addPainting(g,r.outer-s*.13,1.92+(i%4===0?1.0:0),r.a+1.7+i*1.72,-s*Math.PI/2,2500+n++,i%4===0?.44:.53,'A slightly unsettling Victorian night scene in the old room.');for(let i=0;i<11;i++)addPainting(g,r.inner+s*.08,1.95+(i%3===0?.9:0),r.a+2.3+i*1.82,s*Math.PI/2,2550+n++,i%3===0?.42:.47,'A smaller framed work tucked into the darker side of the room.');addParticles(g,r,'dust',105,0xd0c5ba,.017,.31)}
+  /* night sky panel */
+  box(r.cx,4.20,r.center,14.8,.05,23.5,cmat(0x314653,1,0x142430,.30),g,false,true);
+  box(r.cx,-.02,r.center,14.8,.08,23.5,cmat(0x454342,1),g,false,true);
 
-function sofa(g,x,z,material,rotation=0){
+  const roadX=r.cx-s*2.1;
+  box(roadX,.015,r.center,4.75,.035,ROOM_L-.25,M.asphalt,g,false,true);
+  for(const e of[-3.35,3.35])box(roadX,.055,r.center+e,1.42,.08,ROOM_L-.2,M.concrete,g,false,true);
+  for(let i=0;i<11;i++)box(roadX,.058,r.a+1.5+i*2.02,.055,.025,.96,cmat(0xc9bea7,.88),g,false,true);
+
+  /* four slightly different homes */
+  houseDetailed(g,roadX-s*3.35,r.center-4.8,.98,.03,false,s,1);
+  houseDetailed(g,roadX-s*3.60,r.center+4.0,.82,-.06,false,s,1);
+  houseDetailed(g,roadX+s*3.30,r.center-3.8,.90,.06,false,s,-1);
+  houseDetailed(g,roadX+s*3.45,r.center+5.0,.77,-.05,false,s,-1);
+
+  /* utility infrastructure */
+  const poleX=r.inner+s*2.35;
+  cyl(poleX,2.50,r.a+4,.06,4.65,M.darkWood,10,g);
+  box(poleX,4.24,r.a+4,.12,.10,1.60,M.darkWood,g);
+  lineBetween(new THREE.Vector3(poleX,4.24,r.a+4),new THREE.Vector3(r.outer-s*.22,4.04,r.b-2.1),.014,M.metal,g);
+  lineBetween(new THREE.Vector3(poleX,4.15,r.a+4),new THREE.Vector3(r.outer-s*.22,4.30,r.a+1),.014,M.metal,g);
+
+  for(const z of[r.a+2,r.center-1,r.center+7])streetLamp(g,roadX-s*2.55,z,s);
+  car(g,roadX-s*1.65,r.center+1.2);
+  mailbox(g,roadX+s*4.0,r.center-2.0);
+  hydrant(g,roadX-s*4.05,r.center+5.5);
+
+  /* one rubbish bin by a driveway — purposeful, not decorative */
+  box(roadX+s*4.05,.52,r.center+7.1,.45,1.05,.55,cmat(0x3c4847,.86),g);
+  box(roadX+s*4.05,1.08,r.center+7.08,.42,.08,.51,M.darkWood,g);
+
+  /* 24 paintings are integrated into house windows as a neighborhood art walk.
+     4 houses × 6 works. They are visible through warm-lit windows. */
+  let seed=6000;
+  const houseSpecs=[
+    [roadX-s*3.35,r.center-4.8,.98],
+    [roadX-s*3.60,r.center+4.0,.82],
+    [roadX+s*3.30,r.center-3.8,.90],
+    [roadX+s*3.45,r.center+5.0,.77]
+  ];
+
+  for(let h=0;h<4;h++){
+    const hs=houseSpecs[h];
+    const hx=hs[0],hz=hs[1],sc=hs[2];
+    const frontSide=-1;
+
+    for(let i=0;i<6;i++){
+      const wx=h<2?hx-s*.03:hx+s*.03;
+      const row=i<3?0:1;
+      const col=i%3;
+      const wz=hz+[-.88,0,.88][col]*sc;
+      const wy=row===0?1.22*sc:1.95*sc;
+      const glass=cmat(
+        row===0&&col===1?0xd19c59:0x2b3640,
+        .34,
+        row===0&&col===1?0x9b602a:0,
+        row===0&&col===1?.75:0
+      );
+      box(wx,wy,wz,.025,.48*sc,.36*sc,glass,g,false,true);
+      const rot=h<2?Math.PI/2:-Math.PI/2;
+      addPainting(g,wx+(h<2?s*.018:-s*.018),wy,wz,rot,seed++,.24,'A night painting visible through the window of the neighborhood art walk.');
+    }
+  }
+
+  /* porch lamps / window pools */
+  for(const spec of[
+    [roadX-s*3.35,r.center-4.8,.98],
+    [roadX-s*3.60,r.center+4.0,.82],
+    [roadX+s*3.30,r.center-3.8,.90],
+    [roadX+s*3.45,r.center+5.0,.77]
+  ]){
+    const l=practicalRoomLight(g,spec[0]-(spec[0]>0?s*.12:-s*.12),2.30,spec[1],0xffbf69,.30,4.5);
+    l.castShadow=false;
+  }
+
+  addParticles(g,r,'mist',55,0xb9c9d1,.017,.11);
+}
+
+function houseDetailed(g,x,z,sc,rot,garage,s,frontSide){
   const q=new THREE.Group();
   q.position.set(x,0,z);
-  q.rotation.y=rotation;
+  q.rotation.y=rot;
   g.add(q);
+
+  const hm=new THREE.MeshStandardMaterial({
+    map:wood(150+Math.floor(x*3+z),false),
+    roughness:.95
+  });
+
+  const width=2.65*sc;
+  const depth=3.0*sc;
+  const height=2.15*sc;
+
+  box(0,height/2,0,width,height,depth,hm,q);
+  box(0,height+.10,0,width+.28,.36*sc,depth+.30,M.darkWood,q);
+
+  /* front porch facing the street */
+  box(frontSide*(width/2+.28),.36,0,.62,.16,1.58*sc,M.wood,q);
+  box(frontSide*(width/2+.31),1.45,0,.08,.10,1.72*sc,M.darkWood,q);
+  for(const zz of[-.72,.72])cyl(frontSide*(width/2+.31),.82,zz*sc,.045,1.52*sc,M.darkWood,10,q);
+
+  /* three downstairs windows with three upstairs windows. The door is slightly off-centre, so the facade actually works. */
+  const windowZ=[-.88,0,.88];
+  for(const zz of windowZ){
+    box(frontSide*(width/2+.035),1.22*sc,zz*sc,.045,.62*sc,.52*sc,cmat(zz===0?0xd6a15c:0x2a3439,.28,zz===0?0xa5622e:0,zz===0?.70:0),q,false,true);
+    box(frontSide*(width/2+.07),1.22*sc,zz*sc,.025,.48*sc,.39*sc,M.darkWood,q,false,true);
+    box(frontSide*(width/2+.035),1.95*sc,zz*sc,.04,.50*sc,.44*sc,cmat(zz===2*.88?0x2a3033:0xd19a58,.30,zz===2*.88?0:0x92592a,zz===2*.88?0:.55),q,false,true);
+  }
+
+  box(frontSide*(width/2+.06),.88*sc,-.42*sc,.07,1.14*sc,.46*sc,M.darkWood,q);
+  /* a small hedge and one planter */
+  for(let i=0;i<3;i++){
+    sphere(frontSide*(width*.46),.34*sc,-.96*sc+i*.42,.26*sc,M.greenery,q).scale.y=.72;
+  }
+}
+
+/* ------------------------------------------------------------
+   LOBBY 5 — EERIE VICTORIAN MYSTERY
+   ------------------------------------------------------------ */
+function buildHorror(r){
+  const g=r.g,s=r.side;
+
+  box(r.cx,.01,r.center,ROOM_W-.10,.035,ROOM_L-.10,new THREE.MeshStandardMaterial({map:wood(77,true),roughness:1}),g,false,true);
+  box(r.cx,.036,r.center,7.9,.025,9.6,new THREE.MeshStandardMaterial({map:rug(79,'#422b34'),roughness:1}),g,false,true);
+
+  /* draped sofa and one chair facing the wrong direction */
+  const drape=new THREE.MeshStandardMaterial({map:fabric(82,'#766c60'),roughness:1});
+  sofa(g,r.cx-s*3.45,r.center-2.0,drape,.02);
+  const wrong=chair(g,r.cx-s*4.1,r.center+3.2,M.olive,.80);
+  wrong.rotation.y=.80;
+
+  /* tall cabinet */
+  box(r.outer-s*.30,1.30,r.center+3.55,.54,2.40,2.12,M.darkWood,g);
+  for(let i=0;i<3;i++)box(r.outer-s*.58,.74+i*.50,r.center+3.55,.05,.06,1.82,M.brass,g,false,true);
+
+  /* clock */
+  grandClock(g,r.outer-s*.30,r.center-4.65);
+
+  /* mirror with dark reflected surface */
+  box(r.outer-s*.31,2.24,r.center+.15,.07,1.72,1.06,M.darkWood,g);
+  box(r.outer-s*.35,2.24,r.center+.15,.025,1.50,.84,cmat(0x1a1b1d,.14),g,false,true);
+
+  /* old window and curtain */
+  windowUnit(g,r.outer-s*.14,2.28,r.center+6.25,2.72,2.18,0x22272d);
+  box(r.outer-s*.23,2.28,r.center+4.80,.17,2.36,.56,M.olive,g);
+
+  /* small side table / telephone */
+  sideTable(r.cx-s*5.20,r.center+1.15);
+  box(r.cx-s*5.20,1.02,r.center+1.15,.44,.24,.30,M.metal,g);
+  box(r.cx-s*5.20,.93,r.a+2.45,.31,.10,.26,M.metal,g);
+
+  /* covered trunk */
+  box(r.cx-s*4.85,.46,r.b-2.45,1.38,.62,.73,M.brown,g);
+
+  /* candelabra */
+  candelabra(g,r.cx-s*3.0,r.center-5.5);
+
+  /* sealed service door — ordinary Victorian door, subtly ominous */
+  box(r.cx-s*2.05,1.92,r.b-.13,.13,3.55,1.48,M.darkWood,g);
+  box(r.cx-s*2.11,1.92,r.b-.20,.035,3.18,1.10,cmat(0x1d1617,1),g,false,true);
+  sphere(r.cx-s*2.23,1.70,r.b-.20,.055,M.brass,g);
+
+  /* 24 paintings in a believable salon arrangement */
+  let n=0;
+
+  /* 12 around the long outer wall */
+  for(const y of[1.54,2.92]){
+    for(let i=0;i<6;i++){
+      const z=r.a+2.1+i*4.0;
+      outerPaint(r,y,z,7000+n,.50,'A slightly unsettling Victorian night scene hanging in the old room.');
+      n++;
+    }
+  }
+
+  /* 6 on each end wall, forming salon groupings */
+  for(let i=0;i<6;i++){
+    const zz=r.a+.05;
+    const x=r.inner+s*(2.4+i*1.7);
+    addPainting(g,x,2.0,zz,0,7100+n,.43,'A framed work in the Victorian salon.');n++;
+  }
+  for(let i=0;i<6;i++){
+    const zz=r.b-.05;
+    const x=r.inner+s*(2.4+i*1.7);
+    addPainting(g,x,2.0,zz,Math.PI,7200+n,.43,'A framed work hanging above the darker side of the room.');n++;
+  }
+
+  /* practical pools — enough visibility, still uneasy */
+  practicalRoomLight(g,r.cx-s*4.9,2.20,r.center+1.55,0xffc27c,.40,4.8);
+  practicalRoomLight(g,r.cx-s*3.0,2.40,r.center-5.5,0xffc07a,.28,3.5);
+  practicalRoomLight(g,r.outer-s*.60,2.35,r.center+6.25,0x708ca0,.16,4.5);
+
+  addParticles(g,r,'dust',80,0xd0c6bc,.016,.20);
+}
+
+/* ------------------------------------------------------------
+   COMMON PROPS
+   ------------------------------------------------------------ */
+function sofa(g,x,z,material,rotation=0){
+  const q=new THREE.Group();
+  q.position.set(x,0,z);q.rotation.y=rotation;g.add(q);
   box(0,.48,0,2.25,.32,.82,material,q);
   box(0,.98,-.26,2.18,.88,.19,material,q);
   for(const px of[-1.02,1.02])box(px,.63,.03,.13,.48,.90,material,q);
   for(const px of[-.82,.82])box(px,.17,.02,.09,.32,.09,M.darkWood,q);
   return q;
 }
-
-/* ----- common room props ----- */
-function warmLight(g,x,z,color=0xffc77d,intensity=.7,dist=5.5){sphere(x,2.48,z,.07,cmat(color,.22,color,2.0),g);const l=new THREE.PointLight(color,intensity,dist,2);l.position.set(x,2.42,z);g.add(l)}
-function chair(g,x,z,material,rotation=0){const q=new THREE.Group();q.position.set(x,0,z);q.rotation.y=rotation;g.add(q);box(0,.40,0,.72,.18,.70,material,q);box(0,.86,-.27,.72,.90,.13,material,q);for(const dx of[-.25,.25])for(const dz of[-.23,.23])box(dx,.17,dz,.07,.34,.07,M.darkWood,q);return q}
-function table(g,x,z){box(x,.61,z,1.05,.12,.60,M.wood,g);for(const dx of[-.40,.40])for(const dz of[-.21,.21])box(x+dx,.30,z+dz,.055,.56,.055,M.darkWood,g);box(x-.18,.69,z+.01,.31,.035,.22,M.paper,g,false,true);cyl(x+.22,.74,z-.08,.06,.11,M.paper,12,g)}
-function floorLamp(g,x,z){cyl(x,1.1,z,.026,2.08,M.metal,12,g);sphere(x,.13,z,.11,M.metal,g);cyl(x,2.18,z,.22,.30,M.paper,18,g);const l=new THREE.PointLight(0xffc37c,.76,5.5,2);l.position.set(x,2.17,z);g.add(l)}
-function books(g,x,z,s){box(x,1.52,z,.40,2.75,1.55,M.darkWood,g);for(let i=0;i<4;i++){box(x-s*.20,.69+i*.54,z,.07,.07,1.25,M.wood,g,false,true);for(let j=0;j<5;j++)box(x-s*(.30-.045*j),.92+i*.54,z-.50+j*.25,.08,.30,.18,cmat([0x644848,0x6c684d,0x435953,0x75513f,0x5e5661][j],.88),g,false,true)}}
-function windowUnit(g,x,y,z,w,h,color,glow=false){box(x,y,z,.045,h,w,cmat(color,.18,glow?color:0,glow?1.0:0),g,false,true);for(const yy of[y-h/2-.05,y+h/2+.05])box(x,yy,z,.10,.10,w+.12,M.darkWood,g,false,true);for(const zz of[z-w/2-.05,z+w/2+.05])box(x,y,zz,.10,h+.12,.10,M.darkWood,g,false,true);box(x,y,z,.10,h,.05,M.darkWood,g,false,true);box(x,y,z,.10,.05,w,M.darkWood,g,false,true)}
-function rain(g,r,speed=0.3){const count=260,arr=new Float32Array(count*3),rr=seeded(33+r.center);for(let i=0;i<count;i++){arr[i*3]=r.cx+(rr()-.5)*12;arr[i*3+1]=.3+rr()*4.2;arr[i*3+2]=r.center+(rr()-.5)*20}const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(arr,3));const p=new THREE.Points(geo,new THREE.PointsMaterial({color:0xa8bdca,size:.018,transparent:true,opacity:.34,depthWrite:false}));p.userData.particleType='rain';p.userData.speed=speed;g.add(p)}
-function addParticles(g,r,type,count,color,size,opacity){const arr=new Float32Array(count*3),rr=seeded(500+r.center);for(let i=0;i<count;i++){arr[i*3]=r.cx+(rr()-.5)*13;arr[i*3+1]=.2+rr()*4.1;arr[i*3+2]=r.center+(rr()-.5)*21}const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(arr,3));const p=new THREE.Points(geo,new THREE.PointsMaterial({color,size,transparent:true,opacity,depthWrite:false}));p.userData.particleType=type;g.add(p)}
-function pine(g,x,z,s=1){cyl(x,.62*s,z,.11*s,1.24*s,M.darkWood,9,g);for(let i=0;i<4;i++){const c=new THREE.Mesh(new THREE.ConeGeometry((.68-i*.1)*s,(1.18-i*.06)*s,10),M.greenery);c.position.set(x,(1.42+i*.34)*s,z);c.castShadow=true;g.add(c)}sphere(x,2.35*s,z,.34*s,M.snow,g).scale.y=.23}
-function house(g,x,z,s,rot,garage){const q=new THREE.Group();q.position.set(x,0,z);q.rotation.y=rot;g.add(q);const hm=new THREE.MeshStandardMaterial({map:wood(120+Math.floor(x*3+z),false),roughness:.94});box(0,1.02*s,0,2.15*s,2.05*s,2.55*s,hm,q);box(0,2.12*s,0,2.45*s,.38*s,2.84*s,M.darkWood,q);for(const zz of[-.72,.72]){box(-1.10*s,1.20*s,zz*s,.06,.65*s,.52*s,M.darkWood,q);box(-1.14*s,1.20*s,zz*s,.03,.48*s,.36*s,cmat(zz<0?0xd39d5e:0x252d33,.4,zz<0?0x9b642e:0,.9),q,false,true)}box(-1.16*s,.85*s,0,.07,1.16*s,.46*s,M.darkWood,q);if(garage)box(-1.17*s,.82*s,.93*s,.07,1.08*s,1.0*s,M.metal,q)}
-function streetLamp(g,x,z,s){cyl(x,1.65,z,.035,3.15,M.metal,10,g);box(x-s*.14,3.20,z,.08,.06,.50,M.metal,g);sphere(x-s*.36,3.12,z,.11,cmat(0xffd08a,.25,0xffaa3e,2.1),g);const l=new THREE.PointLight(0xffc16d,.76,6.6,2);l.position.set(x-s*.36,3.12,z);g.add(l)}
+function chair(g,x,z,material,rotation=0){
+  const q=new THREE.Group();q.position.set(x,0,z);q.rotation.y=rotation;g.add(q);
+  box(0,.40,0,.72,.18,.70,material,q);
+  box(0,.86,-.27,.72,.90,.13,material,q);
+  for(const dx of[-.25,.25])for(const dz of[-.23,.23])box(dx,.17,dz,.07,.34,.07,M.darkWood,q);
+  return q;
+}
+function table(g,x,z){
+  box(x,.61,z,1.05,.12,.60,M.wood,g);
+  for(const dx of[-.40,.40])for(const dz of[-.21,.21])box(x+dx,.30,z+dz,.055,.56,.055,M.darkWood,g);
+  box(x-.18,.69,z+.01,.31,.035,.22,M.paper,g,false,true);
+  cyl(x+.22,.74,z-.08,.06,.11,M.paper,12,g);
+}
+function floorLamp(g,x,z){
+  cyl(x,1.10,z,.026,2.08,M.metal,12,g);
+  sphere(x,.13,z,.11,M.metal,g);
+  cyl(x,2.18,z,.22,.30,M.paper,18,g);
+  const l=new THREE.PointLight(0xffc37c,.76,5.5,2);l.position.set(x,2.17,z);g.add(l);
+}
+function books(g,x,z,s){
+  box(x,1.52,z,.40,2.75,1.55,M.darkWood,g);
+  for(let i=0;i<4;i++){
+    box(x-s*.20,.69+i*.54,z,.07,.07,1.25,M.wood,g,false,true);
+    for(let j=0;j<5;j++)box(x-s*(.30-.045*j),.92+i*.54,z-.50+j*.25,.08,.30,.18,cmat([0x644848,0x6c684d,0x435953,0x75513f,0x5e5661][j],.88),g,false,true);
+  }
+}
+function windowUnit(g,x,y,z,w,h,color,glow=false){
+  box(x,y,z,.045,h,w,cmat(color,.18,glow?color:0,glow?1.0:0),g,false,true);
+  for(const yy of[y-h/2-.05,y+h/2+.05])box(x,yy,z,.10,.10,w+.12,M.darkWood,g,false,true);
+  for(const zz of[z-w/2-.05,z+w/2+.05])box(x,y,zz,.10,h+.12,.10,M.darkWood,g,false,true);
+  box(x,y,z,.10,h,.05,M.darkWood,g,false,true);
+  box(x,y,z,.10,.05,w,M.darkWood,g,false,true);
+}
+function rain(g,r){
+  const count=190,arr=new Float32Array(count*3),rr=seeded(33+r.center);
+  for(let i=0;i<count;i++){arr[i*3]=r.cx+(rr()-.5)*12;arr[i*3+1]=.3+rr()*4.2;arr[i*3+2]=r.center+(rr()-.5)*20}
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(arr,3));
+  const p=new THREE.Points(geo,new THREE.PointsMaterial({color:0xa8bdca,size:.018,transparent:true,opacity:.30,depthWrite:false}));p.userData.particleType='rain';g.add(p);
+}
+function addParticles(g,r,type,count,color,size,opacity){
+  const arr=new Float32Array(count*3),rr=seeded(500+r.center);
+  for(let i=0;i<count;i++){arr[i*3]=r.cx+(rr()-.5)*13;arr[i*3+1]=.2+rr()*4.1;arr[i*3+2]=r.center+(rr()-.5)*21}
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(arr,3));
+  const p=new THREE.Points(geo,new THREE.PointsMaterial({color,size,transparent:true,opacity,depthWrite:false}));p.userData.particleType=type;g.add(p);
+}
+function pine(g,x,z,s=1){
+  cyl(x,.62*s,z,.11*s,1.24*s,M.darkWood,9,g);
+  for(let i=0;i<4;i++){const c=new THREE.Mesh(new THREE.ConeGeometry((.68-i*.1)*s,(1.18-i*.06)*s,10),M.greenery);c.position.set(x,(1.42+i*.34)*s,z);c.castShadow=true;g.add(c)}
+  sphere(x,2.35*s,z,.34*s,M.snow,g).scale.y=.23;
+}
+function streetLamp(g,x,z,s){
+  cyl(x,1.65,z,.035,3.15,M.metal,10,g);
+  box(x-s*.14,3.20,z,.08,.06,.50,M.metal,g);
+  sphere(x-s*.36,3.12,z,.11,cmat(0xffd08a,.25,0xffaa3e,2.1),g);
+  const l=new THREE.PointLight(0xffc16d,.76,6.6,2);l.position.set(x-s*.36,3.12,z);g.add(l);
+}
 function car(g,x,z){const q=new THREE.Group();q.position.set(x,0,z);g.add(q);box(0,.62,0,2.0,.46,3.6,cmat(0x3d4045,.68),q);box(0,.98,.04,1.56,.46,1.72,cmat(0x252b30,.35),q);for(const px of[-.91,.91])for(const pz of[-1.1,1.1])cyl(px,.34,pz,.25,.17,M.metal,16,q,{z:Math.PI/2})}
 function mailbox(g,x,z){box(x,.72,z,.07,1.35,.07,M.darkWood,g);box(x,1.36,z,.48,.34,.32,M.metal,g);cyl(x,1.54,z,.15,.45,M.metal,14,g,{z:Math.PI/2})}
 function hydrant(g,x,z){cyl(x,.40,z,.11,.52,cmat(0x7f3d34,.72),12,g);cyl(x,.70,z,.17,.08,M.brass,12,g)}
@@ -312,13 +1102,22 @@ function grandClock(g,x,z){box(x,1.95,z,.55,3.8,.52,M.darkWood,g);cyl(x-.32,2.84
 function candelabra(g,x,z){cyl(x,.86,z,.13,.10,M.brass,12,g);for(let i=0;i<3;i++){const a=-.7+i*.7;lineBetween(new THREE.Vector3(x,.91,z),new THREE.Vector3(x+Math.sin(a)*.25,1.16,z+Math.cos(a)*.25),.024,M.brass,g);sphere(x+Math.sin(a)*.25,1.23,z+Math.cos(a)*.25,.045,cmat(0xffd27c,.2,0xff9740,1.8),g)}}
 
 /* ------------------------------------------------------------
-   BUILD ROOMS — exact requested count
+   BUILD ALL FIVE ROOMS
    ------------------------------------------------------------ */
 const rooms=[];
-for(let i=0;i<lobbyInfo.length;i++){const info=lobbyInfo[i];const r=roomShell(lobbyCenters[i],info.side,info.type==='horror'?M.wallDark:M.wall);rooms.push(r);if(info.type==='cinema')buildCinema(r);if(info.type==='cottage')buildCottage(r);if(info.type==='snow')buildSnow(r);if(info.type==='street')buildStreet(r);if(info.type==='horror')buildHorror(r);roomLights(r,info.type)}
+for(let i=0;i<lobbyInfo.length;i++){
+  const info=lobbyInfo[i];
+  const r=roomShell(lobbyCenters[i],info.side,info.type==='horror'?M.wallDark:M.wall);
+  rooms.push(r);
+  if(info.type==='cinema')buildCinema(r);
+  if(info.type==='cottage')buildCottage(r);
+  if(info.type==='snow')buildSnow(r);
+  if(info.type==='street')buildStreet(r);
+  if(info.type==='horror')buildHorror(r);
+}
 
-/* If a room was designed with only its target number, this keeps the counts exact. */
-console.log('Gallery painting counts:',rooms.map((r,i)=>lobbyInfo[i].type+': '+r.g.userData.paintCount).join(' | '));
+console.log('Painting counts:',rooms.map((r,i)=>lobbyInfo[i].name+': '+r.g.userData.paintCount).join(' | '));
+
 
 /* ------------------------------------------------------------
    MOVEMENT / CAMERA
