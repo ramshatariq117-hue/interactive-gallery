@@ -49,7 +49,7 @@ renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.20;
+renderer.toneMappingExposure=1.28;
 renderer.outputEncoding=THREE.sRGBEncoding;
 document.body.appendChild(renderer.domElement);
 
@@ -75,9 +75,9 @@ const coolLight=new THREE.DirectionalLight(0xb8d3ea,.20);
 coolLight.position.set(8,9,95);coolLight.target.position.set(0,1,75);scene.add(coolLight,coolLight.target);
 
 const atmos={
-  hall:{color:0x29242a,density:.00028},
-  cinema:{color:0x1d2530,density:.00042},
-  cottage:{color:0x2c2420,density:.00022},
+  hall:{color:0x29242a,density:.00018},
+  cinema:{color:0x1d2530,density:.00028},
+  cottage:{color:0x2c2420,density:.00016},
   snow:{color:0x72859a,density:.00055},
   street:{color:0x334652,density:.00046},
   horror:{color:0x251d22,density:.00050}
@@ -114,8 +114,41 @@ const M={
 };
 function cmat(color,rough=.8,em=0,ei=0){return new THREE.MeshStandardMaterial({color,roughness:rough,emissive:em,emissiveIntensity:ei})}
 
-function box(x,y,z,sx,sy,sz,material,parent=scene,cast=true,receive=true){const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),material);m.position.set(x,y,z);m.castShadow=cast;m.receiveShadow=receive;parent.add(m);return m}
-function cyl(x,y,z,r,h,material,segments=16,parent=scene,rot={}){const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,segments),material);m.position.set(x,y,z);m.rotation.set(rot.x||0,rot.y||0,rot.z||0);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
+function box(x,y,z,sx,sy,sz,material,a,b,c){
+  let parent=scene,cast=true,receive=true;
+  if(a && typeof a.add==="function"){
+    parent=a;
+    if(typeof b==="boolean")cast=b;
+    if(typeof c==="boolean")receive=c;
+  }else{
+    if(typeof a==="boolean")cast=a;
+    if(typeof b==="boolean")receive=b;
+    if(c && typeof c.add==="function")parent=c;
+  }
+  const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),material);
+  m.position.set(x,y,z);
+  m.castShadow=cast;
+  m.receiveShadow=receive;
+  parent.add(m);
+  return m;
+}
+function cyl(x,y,z,r,h,material,segments=16,a,b){
+  let parent=scene,rot={};
+  if(a && typeof a.add==="function"){
+    parent=a;
+    if(b && typeof b === "object" && typeof b.add !== "function")rot=b;
+  }else{
+    if(a && typeof a === "object")rot=a;
+    if(b && typeof b.add==="function")parent=b;
+  }
+  const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,segments),material);
+  m.position.set(x,y,z);
+  m.rotation.set(rot.x||0,rot.y||0,rot.z||0);
+  m.castShadow=true;
+  m.receiveShadow=true;
+  parent.add(m);
+  return m;
+}
 function sphere(x,y,z,r,material,parent=scene){const m=new THREE.Mesh(new THREE.SphereGeometry(r,16,10),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
 function lineBetween(a,b,r,material,parent=scene){const dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,len=Math.hypot(dx,dy,dz);const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,len,7),material);m.position.set((a.x+b.x)/2,(a.y+b.y)/2,(a.z+b.z)/2);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(dx,dy,dz).normalize());m.castShadow=true;parent.add(m);return m}
 
@@ -156,7 +189,11 @@ sideTable(-.98,11);coatRack(.98,30);mirror(-1,52);radiator(1,62);sideTable(.97,8
 const clickable=[];
 const artNames=['The Orange Hour','A Quiet December','The Night Feeling','Anemoia','After Midnight','Somewhere Familiar','The Empty Road','Rain at 2 AM','Lights Left On','A House Across the Street','Before Everyone Wakes','The Last Car Home','Quiet Weather','November Window','A Place I Remember','Between Two Streets','The Last Porch Light','Someone Was Here'];
 const artPalettes=[['#1a2431','#667c91','#d0a478'],['#202a23','#66756a','#d0b687'],['#302129','#805d69','#dcb392'],['#182631','#4d6a7f','#d2a271'],['#252922','#748067','#c9a47e'],['#30231f','#7b5e50','#d5ab84'],['#1b2228','#5b7180','#aeb9b6'],['#32232c','#765262','#c79075']];
-function paintingCanvas(seed){const r=seeded(seed*7919),c=document.createElement('canvas');c.width=480;c.height=610;const x=c.getContext('2d');const p=artPalettes[seed%artPalettes.length];const g=x.createLinearGradient(0,0,0,610);g.addColorStop(0,p[0]);g.addColorStop(.62,p[1]);g.addColorStop(1,p[2]);x.fillStyle=g;x.fillRect(0,0,480,610);
+const paintingTextureCache=new Map();
+function paintingCanvas(seed){
+  const cacheKey=Math.abs(seed)%18;
+  if(paintingTextureCache.has(cacheKey)) return paintingTextureCache.get(cacheKey);
+  const r=seeded(cacheKey*7919+17),c=document.createElement('canvas');c.width=480;c.height=610;const x=c.getContext('2d');const p=artPalettes[cacheKey%artPalettes.length];const g=x.createLinearGradient(0,0,0,610);g.addColorStop(0,p[0]);g.addColorStop(.62,p[1]);g.addColorStop(1,p[2]);x.fillStyle=g;x.fillRect(0,0,480,610);
   const mode=seed%10;x.fillStyle='rgba(7,10,13,.78)';x.fillRect(0,402,480,208);
   if(mode===0||mode===4||mode===8){x.fillStyle='#1b1e1e';x.beginPath();x.moveTo(118,404);x.lineTo(368,404);x.lineTo(304,248);x.lineTo(215,248);x.closePath();x.fill();x.fillStyle='#2c2725';x.fillRect(118,218,248,120);x.beginPath();x.moveTo(82,218);x.lineTo(242,100);x.lineTo(408,218);x.closePath();x.fill();x.fillStyle='#e2b26c';x.fillRect(158,252,50,58);x.fillRect(284,252,50,58)}
   else if(mode===1||mode===5){x.fillStyle='#192631';x.fillRect(58,86,364,330);x.strokeStyle='rgba(210,223,231,.38)';x.lineWidth=4;for(let i=0;i<35;i++){const px=72+r()*330,py=98+r()*288;x.beginPath();x.moveTo(px,py);x.lineTo(px-7,py+20+r()*45);x.stroke()}x.fillStyle='#e8bc77';x.fillRect(292,246,76,90)}
@@ -165,7 +202,7 @@ function paintingCanvas(seed){const r=seeded(seed*7919),c=document.createElement
   else{x.fillStyle='#171c1e';x.fillRect(0,330,480,280);x.fillStyle='#2d2825';x.fillRect(105,215,270,120);x.fillStyle='#d5a36c';x.fillRect(170,240,55,44);x.fillRect(255,240,55,44);x.fillStyle='#ced4d1';x.beginPath();x.ellipse(240,350,160,52,0,0,Math.PI*2);x.fill()}
   for(let i=0;i<850;i++){x.fillStyle=`rgba(255,255,255,${.006+r()*.018})`;x.fillRect(r()*480,r()*610,1,1)}
   const v=x.createLinearGradient(0,0,0,610);v.addColorStop(0,'rgba(255,255,255,.05)');v.addColorStop(.7,'rgba(255,255,255,0)');v.addColorStop(1,'rgba(0,0,0,.14)');x.fillStyle=v;x.fillRect(0,0,480,610);
-  return new THREE.CanvasTexture(c);
+  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);paintingTextureCache.set(cacheKey,t);return t;
 }
 function addPainting(group,x,y,z,rotationY,seed,scale=1,note='A quiet little piece from the gallery.'){
   const w=1.02*scale,h=1.30*scale,t=.055*scale;
@@ -318,7 +355,7 @@ function escapeHTML(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','
 function enterGallery(){const name=input.value.trim()||'Guest';message.innerHTML='Welcome, '+escapeHTML(name)+'. Your artwork is waiting for you in Lobby 1.';message.style.display='block';enter.style.display='none';input.style.display='none';setupAudio();if(audioCtx?.state==='suspended')audioCtx.resume();setTimeout(()=>{welcome.style.opacity='0';setTimeout(()=>{welcome.style.display='none';controlsEnabled=true;renderer.domElement.requestPointerLock?.()},650)},850)}
 enter.onclick=enterGallery;input.onkeydown=e=>{if(e.key==='Enter')enterGallery()};
 if(location.hash==='#preview'){welcome.style.display='none';controlsEnabled=true;}
-setTimeout(()=>document.getElementById('loading').classList.add('hide'),700);
+setTimeout(()=>document.getElementById('loading').classList.add('hide'),1400);
 
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 
