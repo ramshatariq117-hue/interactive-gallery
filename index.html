@@ -2571,15 +2571,14 @@ function movieScreenTexture(){
 function galleryPainting(group,x,y,z,rotationY,seed,scale,note,wallSide){
   const art=addPainting(group,x,y,z,rotationY,seed,scale,note);
   art.material.emissive=new THREE.Color(0x34302b);
-  art.material.emissiveIntensity=.24;
+  art.material.emissiveIntensity=.30;
 
-  // A believable museum-style picture light sits just above each frame.
+  // Dedicated picture light: artwork remains the brightest, clearest element on the wall.
   const s=wallSide||1;
   const sideWall=Math.abs(Math.abs(rotationY)-Math.PI/2)<.25;
   const fixtureX=sideWall ? x-s*.035 : x;
   const fixtureY=y+scale*.72;
   const fixtureZ=z;
-
   if(sideWall){
     box(fixtureX-s*.055,fixtureY+.11,fixtureZ,.035,.045,.34,M.brass,group,false,true);
     box(fixtureX-s*.075,fixtureY+.02,fixtureZ,.045,.045,.16,M.brass,group,false,true);
@@ -2587,14 +2586,50 @@ function galleryPainting(group,x,y,z,rotationY,seed,scale,note,wallSide){
     box(fixtureX,fixtureY+.11,fixtureZ,.34,.045,.035,M.brass,group,false,true);
     box(fixtureX,fixtureY+.02,fixtureZ,.16,.045,.045,M.brass,group,false,true);
   }
-
   const inwardX=sideWall ? x-s*.34 : x;
-  const light=new THREE.PointLight(0xffd5a0,.48,3.4,2);
+  const light=new THREE.PointLight(0xffd5a0,.72,3.8,2);
   light.position.set(inwardX,y+.38,z);
   light.castShadow=false;
   group.add(light);
   return art;
 }
+
+// A clean museum wall: same scale, same sightline, consistent breathing room.
+function galleryWall(group,r,wall,positions,scale,seedBase,note){
+  const s=r.side;
+  for(let i=0;i<positions.length;i++){
+    const z=positions[i];
+    if(wall==='outer') galleryPainting(group,r.outer-s*.11,1.78,z,-s*Math.PI/2,seedBase+i,scale,note,s);
+    if(wall==='inner') galleryPainting(group,r.inner+s*.11,1.78,z,s*Math.PI/2,seedBase+i,scale,note,-s);
+    if(wall==='a') galleryPainting(group,r.cx,1.78,z,-0.02,seedBase+i,scale,note,s);
+    if(wall==='b') galleryPainting(group,r.cx,1.78,z,Math.PI,seedBase+i,scale,note,-s);
+  }
+}
+
+function galleryGridWall(group,r,wall,count,scale,seedBase,note){
+  const s=r.side;
+  const usableA=r.a+1.35, usableB=r.b-1.35;
+  const positions=[];
+  for(let i=0;i<count;i++) positions.push(usableA+(usableB-usableA)*(i+.5)/count);
+  galleryWall(group,r,wall,positions,scale,seedBase,note);
+}
+
+function galleryDoorWall(group,r,count,scale,seedBase,note){
+  const s=r.side;
+  // Keep a generous clear zone around the hallway door.
+  const leftEnd=r.center-DOOR_HALF-1.15;
+  const rightStart=r.center+DOOR_HALF+1.15;
+  const leftCount=Math.ceil(count/2), rightCount=Math.floor(count/2);
+  for(let i=0;i<leftCount;i++){
+    const z=r.a+1.2+(leftEnd-(r.a+1.2))*(i+.5)/leftCount;
+    galleryPainting(group,r.inner+s*.11,1.78,z,s*Math.PI/2,seedBase+i,scale,note,-s);
+  }
+  for(let i=0;i<rightCount;i++){
+    const z=rightStart+(r.b-1.2-rightStart)*(i+.5)/rightCount;
+    galleryPainting(group,r.inner+s*.11,1.78,z,s*Math.PI/2,seedBase+leftCount+i,scale,note,-s);
+  }
+}
+
 function buildCinema(r){
   const g=r.g, s=r.side;
   const floor=new THREE.MeshStandardMaterial({map:carpet(41,'#302329'),roughness:1});
@@ -2630,11 +2665,21 @@ function buildCinema(r){
     }
   }
 
-  // Curated gallery layout: a balanced 3 + 3 display on the two long walls.
-  const zs=[r.a+3.5,r.center,r.b-3.5];
-  for(let i=0;i<3;i++){
-    galleryPainting(g,r.inner+s*.09,1.70,zs[i],s*Math.PI/2,2000+i,.46,'A framed work carefully displayed in the old cinema.',-s);
-    galleryPainting(g,r.outer-s*.09,1.70,zs[i],-s*Math.PI/2,2010+i,.46,'A framed work carefully displayed opposite the cinema seats.',s);
+  // ROOM 1: the cinema is now a serious exhibition wall — 50 large works.
+  // Two salon rows on each long wall keep every piece visible while preserving the aisle.
+  const row25=[];
+  for(let i=0;i<13;i++) row25.push(r.a+1.0+(r.b-r.a-2.0)*(i+.5)/13);
+  for(let i=0;i<13;i++){
+    const z=row25[i];
+    galleryPainting(g,r.inner+s*.10,1.18,z,s*Math.PI/2,2000+i,.82,'A large framed painting presented as part of the cinema exhibition.',-s);
+    galleryPainting(g,r.outer-s*.10,1.18,z,-s*Math.PI/2,2050+i,.82,'A large framed painting presented as part of the cinema exhibition.',s);
+  }
+  const row12=[];
+  for(let i=0;i<12;i++) row12.push(r.a+1.0+(r.b-r.a-2.0)*(i+.5)/12);
+  for(let i=0;i<12;i++){
+    const z=row12[i];
+    galleryPainting(g,r.inner+s*.10,2.82,z,s*Math.PI/2,2013+i,.82,'A large framed painting presented as part of the cinema exhibition.',-s);
+    galleryPainting(g,r.outer-s*.10,2.82,z,-s*Math.PI/2,2063+i,.82,'A large framed painting presented as part of the cinema exhibition.',s);
   }
 
   // A little dust in the projector-era atmosphere, without adding more geometry.
@@ -3244,11 +3289,12 @@ function buildCottage(r){
   cyl(r.outer-s*2.45,.78,r.center+.25,.075,.13,M.paper,18,g);
   sphere(r.outer-s*4.45,.84,r.center+2.55,.10,M.paper,g);
 
-  // Deliberate salon-style arrangement, kept clear of the fireplace surround.
-  const zs=[r.a+3.5,r.center,r.b-3.5];
-  for(let i=0;i<3;i++) galleryPainting(g,r.inner+s*.09,1.70,zs[i],s*Math.PI/2,2250+i,.46,'A framed work carefully arranged in the cozy cottage gallery.',-s);
-  galleryPainting(g,r.cx,1.78,r.a+.10,-s*0.0,2260,.42,'A framed work displayed above the cottage gallery wall.',s);
-  galleryPainting(g,r.cx,1.78,r.b-.10,s*Math.PI,2261,.42,'A framed work displayed above the cottage gallery wall.',-s);
+  // ROOM 2: 20 large works, arranged as a quiet four-wall cottage salon.
+  // Five works per wall; the fireplace and furniture stay visually secondary.
+  galleryGridWall(g,r,'outer',5,.98,2250,'A large framed painting displayed in the cozy cottage salon.');
+  galleryDoorWall(g,r,5,.98,2260,'A large framed painting displayed in the cozy cottage salon.');
+  galleryGridWall(g,r,'a',5,.98,2270,'A large framed painting displayed in the cozy cottage salon.');
+  galleryGridWall(g,r,'b',5,.98,2280,'A large framed painting displayed in the cozy cottage salon.');
 }
 /* ============================================================
    LOBBY 3
@@ -3676,9 +3722,11 @@ function buildSnow(r){
   const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(arr,3));
   const pts=new THREE.Points(geo,new THREE.PointsMaterial({color:0x8fcbe0,size:.022,transparent:true,opacity:.62,depthWrite:false})); g.add(pts);
 
-  // Clean gallery wall: four evenly spaced works, with matching picture lights.
-  const zs=[r.a+3.5,r.a+9.2,r.a+14.8,r.b-3.5];
-  for(let i=0;i<4;i++) galleryPainting(g,r.outer-s*.10,1.72,zs[i],-s*Math.PI/2,2600+i,.46,'A winter painting carefully arranged in the blue gallery.',s);
+  // ROOM 3: 20 large winter-night works. The blue environment frames the collection rather than competing with it.
+  galleryGridWall(g,r,'outer',6,1.02,2600,'A large winter painting displayed in the snowy blue gallery.');
+  galleryDoorWall(g,r,4,1.02,2610,'A large winter painting displayed in the snowy blue gallery.');
+  galleryGridWall(g,r,'a',5,1.02,2620,'A large winter painting displayed in the snowy blue gallery.');
+  galleryGridWall(g,r,'b',5,1.02,2630,'A large winter painting displayed in the snowy blue gallery.');
 }
 /* ============================================================
    LOBBY 4
@@ -4163,9 +4211,11 @@ function buildStreet(r){
   cyl(roadX+s*4.05,.70,r.center-2.2,.045,1.35,M.darkWood,10,g);
   box(roadX+s*4.05,1.40,r.center-2.2,.48,.32,.35,M.oldMetal,g);
   cyl(roadX-s*4.0,.42,r.center+5.2,.12,.55,cmat(0x733631,.76),14,g);
-  // Curated residential gallery: three larger works on the outer wall, evenly spaced.
-  const streetArtZ=[r.a+3.8,r.center,r.b-3.8];
-  for(let i=0;i<3;i++) galleryPainting(g,roadX-s*4.85,1.70,streetArtZ[i],-s*Math.PI/2,2400+i,.46,'A night painting carefully arranged along the quiet residential gallery.',s);
+  // ROOM 4: 20 large night-scene works, displayed like a real residential art exhibition.
+  galleryGridWall(g,r,'outer',6,1.02,2400,'A large night painting displayed in the residential gallery.');
+  galleryDoorWall(g,r,4,1.02,2410,'A large night painting displayed in the residential gallery.');
+  galleryGridWall(g,r,'a',5,1.02,2420,'A large night painting displayed in the residential gallery.');
+  galleryGridWall(g,r,'b',5,1.02,2430,'A large night painting displayed in the residential gallery.');
   addParticles(g,r,'mist',65,0xb6c5cb,.015,.09);
 }
 
@@ -4340,13 +4390,9 @@ function buildHorror(r){
   for(const yy of[1.55,2.15,2.75]) lineBetween(new THREE.Vector3(wx-s*.07,yy,r.center+4.95),new THREE.Vector3(wx-s*.07,yy,r.center+7.45),.035,M.darkWood,g);
   const moon=new THREE.PointLight(0x627b96,.24,6,2); moon.position.set(wx-s*.8,2.4,r.center+6.2); g.add(moon);
 
-  // Explicit horror cues: portraits, chandelier, candles, cracked-looking marks and a coffin-like chest.
-  horrorPortrait(g,r.inner+s*.10,r.a+2.2,s,301);
-  horrorPortrait(g,r.outer-s*.13,r.center-1.0,-s,302);
-  horrorPortrait(g,r.outer-s*.13,r.center+2.9,-s,303);
+  // Clear horror identity, kept subordinate to the artwork: Victorian chandelier, coffin and chains.
   hangingChandelier(g,r.cx,r.center-1.2);
-  // A large, unmistakable coffin makes the horror theme immediately readable.
-  horrorCoffin(g,r.outer-s*4.0,r.center+2.8,s*Math.PI/2);
+  horrorCoffin(g,r.outer-s*4.15,r.center+3.15,s*Math.PI/2);
   hangingChain(g,r.outer-s*.62,r.center-3.7);
   hangingChain(g,r.outer-s*.62,r.center+4.2);
   // Boarded window and coffin are reinforced with a few old warning placards.
@@ -4360,12 +4406,12 @@ function buildHorror(r){
   for(let i=0;i<7;i++){
     lineBetween(new THREE.Vector3(r.cx-s*(4.9+(i%2)*.5),.045,r.a+2+i*2.4),new THREE.Vector3(r.cx-s*(4.3+(i%2)*.4),.05,r.a+2.4+i*2.4),.018,cmat(0x3c151f,.95),g);
   }
-  // Deliberate Victorian salon layout: two opposing rows with generous spacing.
-  const horrorZ=[r.a+3.5,r.center,r.b-3.5];
-  for(let i=0;i<3;i++){
-    galleryPainting(g,r.outer-s*.13,1.72,horrorZ[i],-s*Math.PI/2,2500+i,.46,'An unsettling portrait carefully displayed in the haunted house.',s);
-    galleryPainting(g,r.inner+s*.08,1.72,horrorZ[i],s*Math.PI/2,2550+i,.46,'An unsettling portrait carefully displayed along the opposite wall.',-s);
-  }
+  // ROOM 5: 20 large horror works. The room reads first as an art gallery, then as a haunted house.
+  // Large, evenly spaced Victorian frames make the collection unmistakable from the entrance.
+  galleryGridWall(g,r,'outer',6,1.02,2500,'A large dark painting displayed in the Victorian horror gallery.');
+  galleryDoorWall(g,r,4,1.02,2510,'A large dark painting displayed in the Victorian horror gallery.');
+  galleryGridWall(g,r,'a',5,1.02,2520,'A large dark painting displayed in the Victorian horror gallery.');
+  galleryGridWall(g,r,'b',5,1.02,2530,'A large dark painting displayed in the Victorian horror gallery.');
   addParticles(g,r,'dust',120,0xb9a9aa,.012,.14);
 }
 
